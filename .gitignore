@@ -1,0 +1,15 @@
+# Datasets (CSV files)
+home-credit-default-risk/*.csv
+
+# PDF and HTML outputs
+*.pdf
+*.html
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
