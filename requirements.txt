@@ -10,3 +10,4 @@ scikit-learn
 lightgbm
 shap
 xgboost
+fairlearn
