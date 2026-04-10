@@ -2,3 +2,9 @@ pandas
 numpy
 matplotlib
 gdown
+seaborn 
+scipy
+scikit-learn
+lightgbm
+shap
+xgboost
