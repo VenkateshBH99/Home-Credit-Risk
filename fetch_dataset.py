@@ -3,7 +3,7 @@ import subprocess
 import sys
 
 FOLDER_ID = "1rGwpgGk-XODILNLoh0tcsvC1MvwVq5ga"
-DATASET_DIR = "./dataset"
+DATASET_DIR = "dataset/original"
 
 
 def ensure_gdown():
@@ -33,6 +33,7 @@ def main():
         quiet=False,
         use_cookies=False,
         remaining_ok=True,
+        skip_download=True,
     )
 
     print(f"\nDone. Files saved to: {DATASET_DIR}/")
