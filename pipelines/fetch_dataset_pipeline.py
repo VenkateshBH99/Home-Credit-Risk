@@ -2,42 +2,39 @@ import os
 import subprocess
 import sys
 
-FOLDER_ID = "1rGwpgGk-XODILNLoh0tcsvC1MvwVq5ga"
-DATASET_DIR = "dataset/original"
+from pipelines import project_config
 
 
 def ensure_gdown():
     try:
         import gdown
-
         return gdown
     except ImportError:
         print("Installing gdown...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "gdown", "-q"])
         import gdown
-
         return gdown
 
 
-def main():
+def run_pipeline():
     gdown = ensure_gdown()
 
-    os.makedirs(DATASET_DIR, exist_ok=True)
+    os.makedirs(project_config.ORIGINAL_DIR, exist_ok=True)
 
-    folder_url = f"https://drive.google.com/drive/folders/{FOLDER_ID}"
-    print(f"Downloading from: {folder_url}\n")
+    folder_url = f"https://drive.google.com/drive/folders/{project_config.DATASET_GOOGLE_DRIVE_FOLDER_ID}"
+    print(f"Fetching dataset from: {folder_url}\n")
 
     gdown.download_folder(
         url=folder_url,
-        output=DATASET_DIR,
+        output=project_config.ORIGINAL_DIR,
         quiet=False,
         use_cookies=False,
         remaining_ok=True,
         skip_download=True,
     )
 
-    print(f"\nDone. Files saved to: {DATASET_DIR}/")
+    print(f"\nDone. Files saved to: {project_config.ORIGINAL_DIR}/")
 
 
 if __name__ == "__main__":
-    main()
+    run_pipeline()

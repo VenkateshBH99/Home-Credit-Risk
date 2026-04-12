@@ -1,48 +1,14 @@
 import gc
 import os
 import re
-import warnings
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 
-warnings.filterwarnings("ignore")
-
-DATA_DIR = "dataset/original"
-OUTPUT_DIR = "dataset/cleaned"
-TARGET_COL = "TARGET"
-
-OUTPUT_FILENAMES = {
-    "train": "train.csv",
-    "validation": "validation.csv",
-    "test": "test.csv",
-}
-
-COLS_TO_DROP_DOMAIN = [
-    "FLAG_DOCUMENT_2",
-    "FLAG_DOCUMENT_4",
-    "FLAG_DOCUMENT_5",
-    "FLAG_DOCUMENT_6",
-    "FLAG_DOCUMENT_7",
-    "FLAG_DOCUMENT_8",
-    "FLAG_DOCUMENT_9",
-    "FLAG_DOCUMENT_10",
-    "FLAG_DOCUMENT_11",
-    "FLAG_DOCUMENT_12",
-    "FLAG_DOCUMENT_13",
-    "FLAG_DOCUMENT_14",
-    "FLAG_DOCUMENT_15",
-    "FLAG_DOCUMENT_16",
-    "FLAG_DOCUMENT_17",
-    "FLAG_DOCUMENT_18",
-    "FLAG_DOCUMENT_19",
-    "FLAG_DOCUMENT_20",
-    "FLAG_DOCUMENT_21",
-    "SK_ID_CURR",
-]
-
+from pipelines import project_config
 
 # =============================================================================
 # STEP 1: LOAD
@@ -58,6 +24,20 @@ def load_datasets(data_dir):
         "pos": "POS_CASH_balance.csv",
         "ins": "installments_payments.csv",
         "cc": "credit_card_balance.csv",
+    }
+    dfs = {}
+    for key, fname in paths.items():
+        dfs[key] = pd.read_csv(os.path.join(data_dir, fname))
+        print(
+            f"   {fname:40s} -> {dfs[key].shape[0]:>10,} rows x {dfs[key].shape[1]:>3} cols"
+        )
+    return dfs
+
+
+def load_application_only(data_dir):
+    """Loads only application_train.csv for traditional pipeline."""
+    paths = {
+        "app_train": "application_train.csv",
     }
     dfs = {}
     for key, fname in paths.items():
@@ -368,6 +348,14 @@ def build_master(app_train, bur_agg, bb_agg, prev_agg, pos_agg, ins_agg, cc_agg)
     return master
 
 
+def build_master_traditional(app_train):
+    """Builds master from only application data (no supplementary tables)."""
+    master = app_train.copy()
+    print(f"\n   Base application_train (traditional): {master.shape}")
+    print(f"\n   Master shape: {master.shape[0]:,} rows x {master.shape[1]} cols")
+    return master
+
+
 # =============================================================================
 # STEPS 4-5: PRE-SPLIT TRANSFORMS  (deterministic, no fitting)
 # =============================================================================
@@ -379,10 +367,39 @@ def fix_outliers(data):
         df["DAYS_EMPLOYED"] = df["DAYS_EMPLOYED"].replace(
             df["DAYS_EMPLOYED"].dropna().max(), np.nan
         )
-    if "CODE_GENDER" in df.columns:
-        df["CODE_GENDER"] = df["CODE_GENDER"].replace("XNA", np.nan)
+    
+    cols_to_replace_xna = [
+        "CODE_GENDER",
+        "ORGANIZATION_TYPE",
+    ]
+    for col in cols_to_replace_xna:
+        if col in df.columns:
+            df[col] = df[col].replace("XNA", np.nan)
+
+    cols_to_drop_domain = [
+        "FLAG_DOCUMENT_2",
+        "FLAG_DOCUMENT_4",
+        "FLAG_DOCUMENT_5",
+        "FLAG_DOCUMENT_6",
+        "FLAG_DOCUMENT_7",
+        "FLAG_DOCUMENT_8",
+        "FLAG_DOCUMENT_9",
+        "FLAG_DOCUMENT_10",
+        "FLAG_DOCUMENT_11",
+        "FLAG_DOCUMENT_12",
+        "FLAG_DOCUMENT_13",
+        "FLAG_DOCUMENT_14",
+        "FLAG_DOCUMENT_15",
+        "FLAG_DOCUMENT_16",
+        "FLAG_DOCUMENT_17",
+        "FLAG_DOCUMENT_18",
+        "FLAG_DOCUMENT_19",
+        "FLAG_DOCUMENT_20",
+        "FLAG_DOCUMENT_21",
+        "SK_ID_CURR",
+    ]
     df = df.drop(
-        columns=[c for c in COLS_TO_DROP_DOMAIN if c in df.columns], errors="ignore"
+        columns=[c for c in cols_to_drop_domain if c in df.columns], errors="ignore"
     )
     return df
 
@@ -390,7 +407,7 @@ def fix_outliers(data):
 def drop_high_null_columns(data, threshold=0.6):
     """Drops columns where more than `threshold` fraction of values are null."""
     df = data.copy()
-    features = [c for c in df.columns if c != TARGET_COL]
+    features = [c for c in df.columns if c != project_config.TARGET_COL]
     null_pct = df[features].isnull().mean()
     drop = null_pct[null_pct > threshold].index.tolist()
 
@@ -490,148 +507,30 @@ def split_data(master):
     """Splits master into train (70%), validation (15%), test (15%)."""
     train, temp = train_test_split(master, test_size=0.30, random_state=42)
     val, test = train_test_split(temp, test_size=0.50, random_state=42)
-    print(f"   train={train.shape[0]:,}  val={val.shape[0]:,}  test={test.shape[0]:,}")
+    print(f"   train={train.shape[0]:,}  val={val.shape[0]:,}  test={test.shape[0]:,}") # type: ignore
     return train, val, test
 
 
 # =============================================================================
-# STEPS 7-9: POST-SPLIT TRANSFORMS  (fit on train only, apply to all three)
-# =============================================================================
-
-
-def _is_binary_col(series):
-    """Returns True only if a non-empty series contains exclusively 0s and 1s."""
-    vals = set(series.dropna().unique())
-    return len(vals) > 0 and vals.issubset({0, 1})
-
-
-def fit_imputer(train_df, strategy="mean"):
-    """Fits imputer on train features only. Returns (imputer, impute_cols)."""
-    features = [c for c in train_df.columns if c != TARGET_COL]
-    num_cols = train_df[features].select_dtypes(include=[np.number]).columns.tolist()
-    binary_cols = {c for c in num_cols if _is_binary_col(train_df[c])}
-    impute_cols = [
-        c for c in num_cols if c not in binary_cols and train_df[c].isnull().any()
-    ]
-
-    imputer = SimpleImputer(strategy=strategy)
-
-    if impute_cols:
-        imputer.fit(train_df[impute_cols])
-        print(
-            f"   Imputer ({strategy}) fitted on train: {len(impute_cols)} column(s) targeted."
-        )
-    else:
-        imputer = None
-        print("   No numerical columns required imputation.")
-
-    return imputer, impute_cols
-
-
-def apply_imputer(df, imputer, impute_cols, split_name):
-    """Applies a pre-fitted imputer to one split, then catches any residual NaNs with fillna(0)."""
-    out = df.copy()
-
-    if imputer is not None and impute_cols:
-        out[impute_cols] = imputer.transform(out[impute_cols])
-
-    features = [c for c in out.columns if c != TARGET_COL]
-    remaining = out[features].isnull().sum().sum()
-    if remaining > 0:
-        out[features] = out[features].fillna(0)
-        print(
-            f"   [{split_name}] Safety fillna(0): {remaining:,} residual NaN(s) cleared."
-        )
-    else:
-        print(f"   [{split_name}] No residual NaNs.")
-    return out
-
-
-def select_low_variance_cols(train_df, threshold=0.01):
-    """Identifies near-zero variance columns from train only. Returns list of cols to drop."""
-    features = [c for c in train_df.columns if c != TARGET_COL]
-    num_cols = train_df[features].select_dtypes(include=[np.number]).columns
-    variances = train_df[num_cols].var()
-    drop_cols = variances[variances < threshold].index.tolist()
-
-    if drop_cols:
-        print(
-            f"   Dropping {len(drop_cols)} low-variance column(s) (threshold={threshold}):"
-        )
-        for c in drop_cols:
-            print(f"     - {c} (var={variances[c]:.6f})")
-    else:
-        print(f"   No low-variance columns found (threshold={threshold}).")
-    return drop_cols
-
-
-def select_correlated_cols(train_df, threshold=0.8):
-    """Identifies redundant columns from each highly correlated X-X pair using train only. Returns list of cols to drop."""
-    features = [c for c in train_df.columns if c != TARGET_COL]
-    num_cols = train_df[features].select_dtypes(include=[np.number]).columns
-    corr_matrix = train_df[num_cols].corr().abs()
-    upper_tri = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
-
-    pairs, drop_cols = [], set()
-    for col in upper_tri.columns:
-        for corr_col in upper_tri.index[upper_tri[col] >= threshold].tolist():
-            pairs.append((corr_col, col, corr_matrix.loc[corr_col, col]))
-            drop_cols.add(col)
-
-    print(f"\n   Highly correlated pairs (|r| >= {threshold}):")
-    if pairs:
-        for f1, f2, val in sorted(pairs, key=lambda x: x[2], reverse=True):
-            print(f"     {f1} <-> {f2}: {val:.4f}")
-    else:
-        print("     None found.")
-    print(
-        f"\n   Total pairs: {len(pairs)} | Dropping {len(drop_cols)} redundant column(s)."
-    )
-    return list(drop_cols)
-
-
-def sanitize_feature_names(df):
-    """Renames columns to be XGBoost/LightGBM-safe. Returns (df, rename_map)."""
-    raw = df.columns.tolist()
-    cleaned = [re.sub(r"[^A-Za-z0-9_]", "_", c) for c in raw]
-
-    seen, deduped = {}, []
-    for c in cleaned:
-        if c in seen:
-            seen[c] += 1
-            deduped.append(f"{c}_{seen[c]}")
-        else:
-            seen[c] = 0
-            deduped.append(c)
-
-    rename_map = {old: new for old, new in zip(raw, deduped) if old != new}
-    if rename_map:
-        print(f"   Sanitized {len(rename_map)} column name(s).")
-    else:
-        print("   All column names already XGBoost/LightGBM-compatible.")
-
-    out = df.copy()
-    out.columns = deduped
-    return out, rename_map
-
-
-# =============================================================================
-# STEP 10: EXPORT + STATISTICS
+# STEP 6: EXPORT + STATISTICS
 # =============================================================================
 
 
 def print_dataset_statistics(splits):
     print("\n" + "=" * 65)
-    print("FINAL DATASET STATISTICS")
+    print("FINAL COMBINED DATASET STATISTICS")
     print("=" * 65)
     for name, df in splits:
         print(f"\n  [{name}]")
         print(f"    Rows    : {df.shape[0]:>10,}")
         print(f"    Columns : {df.shape[1]:>10,}")
-        if TARGET_COL in df.columns:
-            counts = df[TARGET_COL].value_counts().sort_index()
-            pcts = df[TARGET_COL].value_counts(normalize=True).sort_index() * 100
-            print(f"    Class Balance ({TARGET_COL}):")
+        if project_config.TARGET_COL in df.columns:
+            counts = df[project_config.TARGET_COL].value_counts().sort_index()
+            pcts = (
+                df[project_config.TARGET_COL].value_counts(normalize=True).sort_index()
+                * 100
+            )
+            print(f"    Class Balance ({project_config.TARGET_COL}):")
             for cls in counts.index:
                 print(f"      Class {int(cls)}: {counts[cls]:>8,}  ({pcts[cls]:.2f}%)")
         total_nulls = df.isnull().sum().sum()
@@ -661,16 +560,71 @@ def export_splits(train, val, test, output_dir, filenames):
 # MAIN PIPELINE
 # =============================================================================
 
+def check_combined_files_exist(output_dir, filenames):
+    folder = Path(output_dir)
+    if not folder.is_dir():
+        return False
+    for name in filenames.values():
+        file_path = folder / name
+        if not file_path.exists():
+            return False
+    return True
 
-def run_pipeline(
-    data_dir=DATA_DIR,
-    output_dir=OUTPUT_DIR,
-    filenames=OUTPUT_FILENAMES,
-    impute_strategy="mean",
-    low_var_threshold=0.01,
-    corr_threshold=0.8,
+
+def run_pipeline_traditional(
+    data_dir=project_config.ORIGINAL_DIR,
+    output_dir=project_config.AGGREGATED_TRADITIONAL_DIR,
+    filenames=project_config.AGGREGATED_FILENAMES,
     high_null_threshold=0.7,
+    check_existing=True,
 ):
+    """Runs traditional pipeline using only application_train.csv data."""
+    print("Running TRADITIONAL aggregator pipeline (application data only)...")
+    print()
+
+    if check_existing and check_combined_files_exist(output_dir, filenames):
+        print("Traditional aggregated files already exist. Skipping pipeline.")
+        return
+
+    print("1/5: Loading application dataset...")
+    dfs = load_application_only(data_dir)
+
+    print("\n2/5: Building master dataset (no supplementary tables)...")
+    master = build_master_traditional(dfs["app_train"])
+    del dfs
+    gc.collect()
+
+    print("\n3/5: Domain rules, null fixes, dropping low-value columns...")
+    master = fix_outliers(master)
+    master = drop_high_null_columns(master, threshold=high_null_threshold)
+
+    print("\n4/5: Feature engineering and one-hot encoding...")
+    master = feature_extraction_application_data(master)
+
+    print("\n5/5: Splitting -> train / val / test  (before any fitting)...")
+    train, val, test = split_data(master)
+    del master
+    gc.collect()
+
+    print("\n   Exporting traditional splits (unsanitized, for preprocessing pipeline)...")
+    export_splits(train, val, test, output_dir, filenames)
+
+
+def run_pipeline_combined(
+    data_dir=project_config.ORIGINAL_DIR,
+    output_dir=project_config.AGGREGATED_COMBINED_DIR,
+    filenames=project_config.AGGREGATED_FILENAMES,
+    high_null_threshold=0.7,
+    check_existing=True,
+):
+    """Runs combined pipeline aggregating from all supplementary tables."""
+    print("Running COMBINED aggregator pipeline (all tables aggregated)...")
+    print()
+
+    if check_existing and check_combined_files_exist(output_dir, filenames):
+        print("Combined aggregated files already exist. Skipping pipeline.")
+        return
+
     print("1/7: Loading raw datasets...")
     dfs = load_datasets(data_dir)
 
@@ -703,33 +657,39 @@ def run_pipeline(
     del master
     gc.collect()
 
-    print("\n7/7: Post-split fitting on train -> transform all splits...")
-
-    print("\n   [Imputation]")
-    imputer, impute_cols = fit_imputer(train, strategy=impute_strategy)
-    train = apply_imputer(train, imputer, impute_cols, "train")
-    val = apply_imputer(val, imputer, impute_cols, "val")
-    test = apply_imputer(test, imputer, impute_cols, "test")
-
-    print("\n   [Low-variance drop — fitted on train]")
-    low_var_cols = select_low_variance_cols(train, threshold=low_var_threshold)
-    train = train.drop(columns=low_var_cols)
-    val = val.drop(columns=low_var_cols)
-    test = test.drop(columns=low_var_cols)
-
-    print("\n   [Correlation drop — fitted on train]")
-    corr_cols = select_correlated_cols(train, threshold=corr_threshold)
-    train = train.drop(columns=corr_cols)
-    val = val.drop(columns=corr_cols)
-    test = test.drop(columns=corr_cols)
-
-    print("\n   [Name sanitization]")
-    train, rename_map = sanitize_feature_names(train)
-    val = val.rename(columns=rename_map)
-    test = test.rename(columns=rename_map)
-
-    print(f"\n   Final column count: {train.shape[1]}")
+    print("\n7/7: Exporting combined splits (unsanitized, for preprocessing pipeline)...")
     export_splits(train, val, test, output_dir, filenames)
+
+
+def run_pipeline(
+    data_dir=project_config.ORIGINAL_DIR,
+    output_dir=project_config.AGGREGATED_DIR,
+    filenames=project_config.AGGREGATED_FILENAMES,
+    high_null_threshold=0.7,
+    check_existing=True,
+    pipeline_type="both",
+):
+    """
+    Main pipeline runner. 
+    pipeline_type: 'traditional', 'combined', or 'both' (default)
+    """
+    if pipeline_type in ["traditional", "both"]:
+        run_pipeline_traditional(
+            data_dir=data_dir,
+            output_dir=project_config.AGGREGATED_TRADITIONAL_DIR,
+            filenames=filenames,
+            high_null_threshold=high_null_threshold,
+            check_existing=check_existing,
+        )
+    
+    if pipeline_type in ["combined", "both"]:
+        run_pipeline_combined(
+            data_dir=data_dir,
+            output_dir=project_config.AGGREGATED_COMBINED_DIR,
+            filenames=filenames,
+            high_null_threshold=high_null_threshold,
+            check_existing=check_existing,
+        )
 
 
 if __name__ == "__main__":
