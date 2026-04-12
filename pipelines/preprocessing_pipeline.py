@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 from pipelines import project_config
 
@@ -168,6 +168,59 @@ def select_correlated_cols(train_df, threshold=0.8):
         f"\n   Total pairs: {len(pairs)} | Dropping {len(drop_cols)} redundant column(s)."
     )
     return list(drop_cols)
+
+
+def fit_label_encoders(train_df):
+    """Fits LabelEncoders on train categorical features only. Returns (encoders_dict, cat_cols)."""
+    features = [c for c in train_df.columns if c != project_config.TARGET_COL]
+    num_cols = train_df[features].select_dtypes(include=[np.number]).columns.tolist()
+    cat_cols = [c for c in features if c not in num_cols]
+    
+    encoders = {}
+    
+    if cat_cols:
+        for col in cat_cols:
+            encoder = LabelEncoder()
+            # Fit on non-null values in train
+            encoder.fit(train_df[col].dropna().astype(str))
+            encoders[col] = encoder
+        print(f"   LabelEncoders fitted on train: {len(cat_cols)} categorical column(s).")
+    else:
+        print("   No categorical columns to encode.")
+    
+    return encoders, cat_cols
+
+
+def apply_label_encoders(df, encoders, cat_cols, split_name):
+    """Applies pre-fitted LabelEncoders to one split, handling unseen values gracefully."""
+    out = df.copy()
+    
+    if not encoders or not cat_cols:
+        print(f"   [{split_name}] No categorical encoding needed.")
+        return out
+    
+    for col in cat_cols:
+        if col in encoders:
+            encoder = encoders[col]
+            # Handle NaNs: fill temporarily, encode, then restore NaNs as -1 or 0
+            mask = out[col].isnull()
+            col_str = out[col].astype(str)
+            
+            try:
+                out[col] = encoder.transform(col_str)
+            except ValueError as e:
+                # Handle unseen values by mapping them to a default class
+                # Get the most frequent class index as fallback
+                out[col] = col_str.map(
+                    lambda x: encoder.transform([x])[0] if x in encoder.classes_ 
+                    else np.where(encoder.classes_ == encoder.classes_[0])[0][0]
+                )
+            
+            # Set NaN positions to -1 to indicate missing
+            out.loc[mask, col] = -1
+    
+    print(f"   [{split_name}] Categorical encoding applied to {len(cat_cols)} column(s).")
+    return out
 
 
 def sanitize_feature_names(df):
@@ -351,14 +404,21 @@ def run_pipeline_single(
     val = val.drop(columns=corr_cols)
     test = test.drop(columns=corr_cols)
 
-    # Step 5: Feature name sanitization
-    print(f"\nStep 5/7: Feature name sanitization...")
+    # Step 5: Label encoding for categorical features
+    print(f"\nStep 5/7: Label encoding categorical features (fit on train)...")
+    encoders, cat_cols = fit_label_encoders(train)
+    train = apply_label_encoders(train, encoders, cat_cols, "train")
+    val = apply_label_encoders(val, encoders, cat_cols, "val")
+    test = apply_label_encoders(test, encoders, cat_cols, "test")
+
+    # Step 6: Feature name sanitization
+    print(f"\nStep 6/7: Feature name sanitization...")
     train, rename_map = sanitize_feature_names(train)
     val = val.rename(columns=rename_map)
     test = test.rename(columns=rename_map)
 
-    # Step 6: PCA + Rotation
-    print(f"\nStep 6/7: PCA transformation (use_pca={use_pca})...")
+    # Step 7: PCA + Rotation
+    print(f"\nStep 7/7: PCA transformation (use_pca={use_pca})...")
 
     # Separate numerical and categorical features
     features = [c for c in train.columns if c != project_config.TARGET_COL]
@@ -465,8 +525,8 @@ def run_pipeline_single(
         
         print(f"   Standard scaling applied to {len(num_cols)} numerical features (no PCA)")
 
-    # Step 7: Export
-    print(f"\nStep 7/7: Exporting {pipeline_type} preprocessed splits...")
+    # Step 8: Export
+    print(f"\nStep 8/8: Exporting {pipeline_type} preprocessed splits...")
     export_preprocessed_splits(train, val, test, output_dir, filenames)
 
     print(f"\n{pipeline_type.capitalize()} preprocessing pipeline completed successfully!")
