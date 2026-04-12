@@ -2,15 +2,15 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+DATASET_ROOT = "dataset"
 DATASET_GOOGLE_DRIVE_FOLDER_ID = "1rGwpgGk-XODILNLoh0tcsvC1MvwVq5ga"
-ORIGINAL_DIR = "dataset/original"
+ORIGINAL_DIR = f"{DATASET_ROOT}/original"
 
 TARGET_COL = "TARGET"
 
-# Aggregator pipeline directories and filenames
-AGGREGATED_DIR = "dataset/aggregated"
-AGGREGATED_TRADITIONAL_DIR = "dataset/aggregated/traditional"
-AGGREGATED_COMBINED_DIR = "dataset/aggregated/combined"
+AGGREGATED_DIR = f"{DATASET_ROOT}/aggregated"
+AGGREGATED_TRADITIONAL_DIR = f"{AGGREGATED_DIR}/traditional"
+AGGREGATED_COMBINED_DIR = f"{AGGREGATED_DIR}/combined"
 
 AGGREGATED_FILENAMES = {
     "train": "train.csv",
@@ -18,20 +18,13 @@ AGGREGATED_FILENAMES = {
     "test": "test.csv",
 }
 
-# Preprocessor pipeline directories and filenames
-PREPROCESSED_DIR = "dataset/preprocessed"
+PREPROCESSED_DIR = f"{DATASET_ROOT}/preprocessed"
 
-# Traditional pipeline
-PREPROCESSED_TRADITIONAL_PCA_DIR = "dataset/preprocessed/traditional_pca"
-PREPROCESSED_TRADITIONAL_NO_PCA_DIR = "dataset/preprocessed/traditional_no_pca"
+PREPROCESSED_TRADITIONAL_PCA_DIR = f"{PREPROCESSED_DIR}/traditional_pca"
+PREPROCESSED_TRADITIONAL_NO_PCA_DIR = f"{PREPROCESSED_DIR}/traditional_no_pca"
 
-# Combined pipeline
-PREPROCESSED_COMBINED_PCA_DIR = "dataset/preprocessed/combined_pca"
-PREPROCESSED_COMBINED_NO_PCA_DIR = "dataset/preprocessed/combined_no_pca"
-
-# Backwards compatibility
-PREPROCESSED_TRADITIONAL_DIR = PREPROCESSED_TRADITIONAL_PCA_DIR
-PREPROCESSED_COMBINED_DIR = PREPROCESSED_COMBINED_PCA_DIR
+PREPROCESSED_COMBINED_PCA_DIR = f"{PREPROCESSED_DIR}/combined_pca"
+PREPROCESSED_COMBINED_NO_PCA_DIR = f"{PREPROCESSED_DIR}/combined_no_pca"
 
 PREPROCESSED_FILENAMES = {
     "train": "train.csv",

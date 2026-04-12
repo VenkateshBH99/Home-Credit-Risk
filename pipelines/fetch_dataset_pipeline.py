@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 
-from pipelines import project_config
+from . import project_config
 
 
 def ensure_gdown():
@@ -16,7 +16,7 @@ def ensure_gdown():
         return gdown
 
 
-def run_pipeline():
+def run_pipeline(check_existing=True):
     gdown = ensure_gdown()
 
     os.makedirs(project_config.ORIGINAL_DIR, exist_ok=True)
@@ -29,8 +29,7 @@ def run_pipeline():
         output=project_config.ORIGINAL_DIR,
         quiet=False,
         use_cookies=False,
-        remaining_ok=True,
-        skip_download=True,
+        skip_download=check_existing,
     )
 
     print(f"\nDone. Files saved to: {project_config.ORIGINAL_DIR}/")
