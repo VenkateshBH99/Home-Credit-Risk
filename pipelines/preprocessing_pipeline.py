@@ -303,13 +303,16 @@ def run_pipeline_single(
     corr_threshold=0.8,
     pca_variance_explained=0.90,
     use_rotation=True,
+    use_pca=True,
     check_existing=True,
 ):
     """
     Post-split preprocessing pipeline for a single pipeline type (traditional/combined).
+    use_pca: If False, skips PCA and uses numerical features directly.
     """
+    pca_tag = "pca" if use_pca else "no_pca"
     print(f"\n{'='*65}")
-    print(f"Running {pipeline_type.upper()} preprocessing pipeline...")
+    print(f"Running {pipeline_type.upper()} preprocessing pipeline ({pca_tag})...")
     print(f"{'='*65}\n")
 
     if check_existing and check_preprocessed_files_exist(output_dir, filenames):
@@ -355,66 +358,112 @@ def run_pipeline_single(
     test = test.rename(columns=rename_map)
 
     # Step 6: PCA + Rotation
-    print(f"\nStep 6/7: PCA + Varimax rotation (explaining {pca_variance_explained*100:.0f}% variance)...")
+    print(f"\nStep 6/7: PCA transformation (use_pca={use_pca})...")
 
     # Separate numerical and categorical features
     features = [c for c in train.columns if c != project_config.TARGET_COL]
     num_cols = train[features].select_dtypes(include=[np.number]).columns.tolist()
     cat_cols = [c for c in features if c not in num_cols]
 
-    # Fit PCA on train numerical features
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(train[num_cols])
+    if use_pca:
+        # Fit PCA on train numerical features
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(train[num_cols])
 
-    pca = PCA(n_components=pca_variance_explained, random_state=42)
-    X_train_pca = pca.fit_transform(X_train_scaled)
+        pca = PCA(n_components=pca_variance_explained, random_state=42)
+        X_train_pca = pca.fit_transform(X_train_scaled)
 
-    # Apply varimax rotation
-    if use_rotation:
-        X_train_rot = varimax(X_train_pca)
-        print(f"   Varimax rotation applied: {X_train_pca.shape[1]} PCA components")
-    else:
-        X_train_rot = X_train_pca
-        print(f"   No rotation: {X_train_pca.shape[1]} PCA components")
-
-    n_components = X_train_rot.shape[1]
-    pca_cols = [f"PC{i+1}" for i in range(n_components)]
-
-    # Transform train
-    train_out = pd.concat(
-        [
-            pd.DataFrame(X_train_rot, columns=pca_cols, index=train.index),
-            train[cat_cols].reset_index(drop=True),
-            train[[project_config.TARGET_COL]].reset_index(drop=True),
-        ],
-        axis=1,
-    )
-
-    # Transform val and test
-    outputs = {"train": train_out}
-
-    for split_name, df in [("validation", val), ("test", test)]:
-        X_scaled = scaler.transform(df[num_cols])
-        X_pca = pca.transform(X_scaled)
-        
+        # Apply varimax rotation
         if use_rotation:
-            X_rot = varimax(X_pca)
+            X_train_rot = varimax(X_train_pca)
+            print(f"   Varimax rotation applied: {X_train_pca.shape[1]} PCA components")
         else:
-            X_rot = X_pca
+            X_train_rot = X_train_pca
+            print(f"   No rotation: {X_train_pca.shape[1]} PCA components")
 
-        out_df = pd.concat(
+        n_components = X_train_rot.shape[1]
+        pca_cols = [f"PC{i+1}" for i in range(n_components)]
+
+        # Transform train
+        train_out = pd.concat(
             [
-                pd.DataFrame(X_rot, columns=pca_cols, index=df.index),
-                df[cat_cols].reset_index(drop=True),
-                df[[project_config.TARGET_COL]].reset_index(drop=True),
+                pd.DataFrame(X_train_rot, columns=pca_cols, index=train.index),
+                train[cat_cols].reset_index(drop=True),
+                train[[project_config.TARGET_COL]].reset_index(drop=True),
             ],
             axis=1,
         )
-        outputs[split_name] = out_df
 
-    train = outputs["train"]
-    val = outputs["validation"]
-    test = outputs["test"]
+        # Transform val and test
+        outputs = {"train": train_out}
+
+        for split_name, df in [("validation", val), ("test", test)]:
+            X_scaled = scaler.transform(df[num_cols])
+            X_pca = pca.transform(X_scaled)
+            
+            if use_rotation:
+                X_rot = varimax(X_pca)
+            else:
+                X_rot = X_pca
+
+            out_df = pd.concat(
+                [
+                    pd.DataFrame(X_rot, columns=pca_cols, index=df.index),
+                    df[cat_cols].reset_index(drop=True),
+                    df[[project_config.TARGET_COL]].reset_index(drop=True),
+                ],
+                axis=1,
+            )
+            outputs[split_name] = out_df
+
+        train = outputs["train"]
+        val = outputs["validation"]
+        test = outputs["test"]
+    else:
+        # No PCA: scale and keep numerical features as-is
+        scaler = StandardScaler()
+        
+        # Fit on train
+        X_train_scaled = scaler.fit_transform(train[num_cols])
+        train_num = pd.DataFrame(X_train_scaled, columns=num_cols, index=train.index)
+        
+        # Transform val
+        X_val_scaled = scaler.transform(val[num_cols])
+        val_num = pd.DataFrame(X_val_scaled, columns=num_cols, index=val.index)
+        
+        # Transform test
+        X_test_scaled = scaler.transform(test[num_cols])
+        test_num = pd.DataFrame(X_test_scaled, columns=num_cols, index=test.index)
+        
+        # Concatenate with categorical and target columns
+        train = pd.concat(
+            [
+                train_num,
+                train[cat_cols].reset_index(drop=True),
+                train[[project_config.TARGET_COL]].reset_index(drop=True),
+            ],
+            axis=1,
+        )
+        
+        val = pd.concat(
+            [
+                val_num,
+                val[cat_cols].reset_index(drop=True),
+                val[[project_config.TARGET_COL]].reset_index(drop=True),
+            ],
+            axis=1,
+        )
+        
+        test = pd.concat(
+            [
+                test_num,
+                test[cat_cols].reset_index(drop=True),
+                test[[project_config.TARGET_COL]].reset_index(drop=True),
+            ],
+            axis=1,
+        )
+        
+        print(f"   Standard scaling applied to {len(num_cols)} numerical features (no PCA)")
 
     # Step 7: Export
     print(f"\nStep 7/7: Exporting {pipeline_type} preprocessed splits...")
@@ -433,40 +482,52 @@ def run_pipeline(
     use_rotation=True,
     check_existing=True,
     pipeline_type="both",
+    pca_variant="both",
 ):
     """
     Main preprocessing pipeline runner.
     pipeline_type: 'traditional', 'combined', or 'both' (default)
+    pca_variant: 'pca', 'no_pca', or 'both' (default) - which variants to run
     """
-    if pipeline_type in ["traditional", "both"]:
-        run_pipeline_single(
-            pipeline_type="traditional",
-            combined_dir=project_config.AGGREGATED_TRADITIONAL_DIR,
-            combined_filenames=combined_filenames,
-            output_dir=project_config.PREPROCESSED_TRADITIONAL_DIR,
-            filenames=preprocessed_filenames,
-            impute_strategy=impute_strategy,
-            low_var_threshold=low_var_threshold,
-            corr_threshold=corr_threshold,
-            pca_variance_explained=pca_variance_explained,
-            use_rotation=use_rotation,
-            check_existing=check_existing,
-        )
-    
-    if pipeline_type in ["combined", "both"]:
-        run_pipeline_single(
-            pipeline_type="combined",
-            combined_dir=project_config.AGGREGATED_COMBINED_DIR,
-            combined_filenames=combined_filenames,
-            output_dir=project_config.PREPROCESSED_COMBINED_DIR,
-            filenames=preprocessed_filenames,
-            impute_strategy=impute_strategy,
-            low_var_threshold=low_var_threshold,
-            corr_threshold=corr_threshold,
-            pca_variance_explained=pca_variance_explained,
-            use_rotation=use_rotation,
-            check_existing=check_existing,
-        )
+    # Define output dir mapping
+    dir_mapping = {
+        ("traditional", True): project_config.PREPROCESSED_TRADITIONAL_PCA_DIR,
+        ("traditional", False): project_config.PREPROCESSED_TRADITIONAL_NO_PCA_DIR,
+        ("combined", True): project_config.PREPROCESSED_COMBINED_PCA_DIR,
+        ("combined", False): project_config.PREPROCESSED_COMBINED_NO_PCA_DIR,
+    }
+
+    # Define aggregated dir mapping
+    agg_dir_mapping = {
+        "traditional": project_config.AGGREGATED_TRADITIONAL_DIR,
+        "combined": project_config.AGGREGATED_COMBINED_DIR,
+    }
+
+    pipeline_types_to_run = (
+        ["traditional", "combined"]
+        if pipeline_type == "both"
+        else [pipeline_type]
+    )
+    pca_variants_to_run = (
+        [True, False] if pca_variant == "both" else [pca_variant == "pca"]
+    )
+
+    for p_type in pipeline_types_to_run:
+        for use_pca in pca_variants_to_run:
+            run_pipeline_single(
+                pipeline_type=p_type,
+                combined_dir=agg_dir_mapping[p_type],
+                combined_filenames=combined_filenames,
+                output_dir=dir_mapping[(p_type, use_pca)],
+                filenames=preprocessed_filenames,
+                impute_strategy=impute_strategy,
+                low_var_threshold=low_var_threshold,
+                corr_threshold=corr_threshold,
+                pca_variance_explained=pca_variance_explained,
+                use_rotation=use_rotation,
+                use_pca=use_pca,
+                check_existing=check_existing,
+            )
 
 
 if __name__ == "__main__":

@@ -20,8 +20,18 @@ AGGREGATED_FILENAMES = {
 
 # Preprocessor pipeline directories and filenames
 PREPROCESSED_DIR = "dataset/preprocessed"
-PREPROCESSED_TRADITIONAL_DIR = "dataset/preprocessed/traditional"
-PREPROCESSED_COMBINED_DIR = "dataset/preprocessed/combined"
+
+# Traditional pipeline
+PREPROCESSED_TRADITIONAL_PCA_DIR = "dataset/preprocessed/traditional_pca"
+PREPROCESSED_TRADITIONAL_NO_PCA_DIR = "dataset/preprocessed/traditional_no_pca"
+
+# Combined pipeline
+PREPROCESSED_COMBINED_PCA_DIR = "dataset/preprocessed/combined_pca"
+PREPROCESSED_COMBINED_NO_PCA_DIR = "dataset/preprocessed/combined_no_pca"
+
+# Backwards compatibility
+PREPROCESSED_TRADITIONAL_DIR = PREPROCESSED_TRADITIONAL_PCA_DIR
+PREPROCESSED_COMBINED_DIR = PREPROCESSED_COMBINED_PCA_DIR
 
 PREPROCESSED_FILENAMES = {
     "train": "train.csv",
