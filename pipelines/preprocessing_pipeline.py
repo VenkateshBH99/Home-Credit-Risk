@@ -404,26 +404,28 @@ def run_pipeline_single(
     val = val.drop(columns=corr_cols)
     test = test.drop(columns=corr_cols)
 
+    # Identify categorical columns BEFORE encoding (so we don't scale them after)
+    features = [c for c in train.columns if c != project_config.TARGET_COL]
+    num_cols = train[features].select_dtypes(include=[np.number]).columns.tolist()
+    cat_cols_to_encode = [c for c in features if c not in num_cols]
+
     # Step 5: Label encoding for categorical features
     print(f"\nStep 5/7: Label encoding categorical features (fit on train)...")
-    encoders, cat_cols = fit_label_encoders(train)
-    train = apply_label_encoders(train, encoders, cat_cols, "train")
-    val = apply_label_encoders(val, encoders, cat_cols, "val")
-    test = apply_label_encoders(test, encoders, cat_cols, "test")
+    encoders, _ = fit_label_encoders(train)
+    train = apply_label_encoders(train, encoders, cat_cols_to_encode, "train")
+    val = apply_label_encoders(val, encoders, cat_cols_to_encode, "val")
+    test = apply_label_encoders(test, encoders, cat_cols_to_encode, "test")
 
     # Step 6: Feature name sanitization
     print(f"\nStep 6/7: Feature name sanitization...")
     train, rename_map = sanitize_feature_names(train)
     val = val.rename(columns=rename_map)
     test = test.rename(columns=rename_map)
+    # Update cat_cols names if any were sanitized
+    cat_cols = [rename_map.get(c, c) for c in cat_cols_to_encode]
 
     # Step 7: PCA + Rotation
     print(f"\nStep 7/7: PCA transformation (use_pca={use_pca})...")
-
-    # Separate numerical and categorical features
-    features = [c for c in train.columns if c != project_config.TARGET_COL]
-    num_cols = train[features].select_dtypes(include=[np.number]).columns.tolist()
-    cat_cols = [c for c in features if c not in num_cols]
 
     if use_pca:
         # Fit PCA on train numerical features
