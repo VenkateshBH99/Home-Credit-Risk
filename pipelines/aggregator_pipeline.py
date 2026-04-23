@@ -8,7 +8,7 @@ import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 
-from pipelines import project_config
+from . import project_config
 
 # =============================================================================
 # STEP 1: LOAD

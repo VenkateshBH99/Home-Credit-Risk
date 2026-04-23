@@ -1,6 +1,7 @@
 # PDF and HTML outputs
-*.pdf
+# *.pdf
 *.html
+.switchboard
 
 # Python
 __pycache__/

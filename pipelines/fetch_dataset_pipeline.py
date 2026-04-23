@@ -3,6 +3,7 @@ import subprocess
 import sys
 
 from . import project_config
+from . import project_config
 
 
 def ensure_gdown():
