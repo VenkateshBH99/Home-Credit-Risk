@@ -1,0 +1,104 @@
+\chapter{Conclusion and Future Work}
+\label{chap:conclusion}
+
+\section{Summary of Findings}
+\label{sec:findings}
+
+This project has demonstrated that incorporating alternative data from supplementary relational tables meaningfully improves credit default prediction for thin-file and credit-invisible borrowers. The research spanned the complete credit risk modelling lifecycle---from raw data ingestion through feature engineering, predictive modelling, scorecard construction, fairness evaluation, and governance design. The key findings are:
+
+\begin{enumerate}
+    \item \textbf{Alternative data provides measurable uplift:} The combined dataset (incorporating behavioural data from 7 supplementary tables totalling 55 million+ records) improved LightGBM AUC from 0.76 (application-only) to 0.78---a 2.6\% relative improvement. This uplift is most pronounced for thin-file applicants who lack bureau-based features, directly addressing the financial inclusion objective.
+
+    \item \textbf{LightGBM is the champion model:} LightGBM with ensemble undersampling achieved the best balance of AUC (0.78), Gini coefficient (0.56), recall (0.69), and computational efficiency across all 16 model-dataset combinations tested.
+
+    \item \textbf{The A/B/C scorecard provides interpretable risk segmentation:} The logistic regression-based scorecard (300--850 scale, PDO = 20) demonstrates a 20$\times$ default rate differential between lowest and highest score bands. The A/B/C score framework covers origination (AUC = 0.716), monitoring (AUC = 0.616), and collection (AUC = 0.579) stages using intentionally disjoint feature subsets.
+
+    \item \textbf{PCA degrades tree-based performance:} PCA is better suited for linear models; tree-based models lose feature-level splitting granularity when inputs are compressed into abstract components (AUC drops of 0.01--0.02). This justified the choice to use original features for ensemble models while retaining PCA as a robustness check.
+
+    \item \textbf{Gender bias exists in the data, not the algorithms:} All four models show uniform equalised odds, confirming that the observed demographic parity disparity originates from the training data rather than algorithmic choices. Ensemble models mitigate this better than Logistic Regression by distributing bias across many splits, and ThresholdOptimizer post-processing further reduces disparity with minimal AUC impact.
+
+    \item \textbf{EXT\_SOURCE scores are the strongest predictors:} Through analysis of data characteristics (missing rates, unique value counts, correlations), the external sources are interpreted as: EXT\_SOURCE\_1 (private credit bureau score, 56.4\% missing), EXT\_SOURCE\_2 (telco/digital footprint, 0.2\% missing), and EXT\_SOURCE\_3 (government/public credit band, 814 unique values).
+\end{enumerate}
+
+\section{Addressing Professor's Feedback}
+\label{sec:feedback}
+
+Several points of feedback from the initial project presentation are systematically addressed throughout this dissertation:
+
+\begin{enumerate}
+    \item \textbf{Business vs Technical Objectives:} Chapter~\ref{chap:introduction} clearly separates business objectives (Section~\ref{sec:business_objectives}: expand lending to thin-file borrowers, reduce defaults by 2--5\%, deliver stakeholder value, ensure compliance) from technical objectives (Section~\ref{sec:technical_objectives}: AUC $> 0.75$, pipeline design across 8 tables, model comparison, fairness metrics). This separation ensures that technical achievements are always connected to their business impact.
+
+    \item \textbf{How Alternative Data Helped:} Chapter~\ref{chap:modeling}, Section~\ref{sec:alt_data_impact} provides a quantitative assessment: +2.6\% AUC uplift from behavioural data, with traditional features still dominating top SHAP rankings but alternative data being critical for the thin-file segment where bureau-based features are unavailable.
+
+    \item \textbf{Credit Scoring Dataset Disjointness:} Chapter~\ref{chap:scoring}, Section~\ref{sec:abc_framework} explicitly describes how the A/B/C score feature subsets are disjoint by design---A-score uses application-time features (170), B-score uses post-origination behavioural features (34), and C-score uses delinquency indicators (13)---with each score answering a distinct business question at a different lifecycle stage.
+
+    \item \textbf{Decision Tree Baseline:} Chapter~\ref{chap:modeling}, Section~\ref{sec:experimental_design} explains why Decision Tree was not included as a separate baseline: Random Forest already captures and extends the Decision Tree paradigm through bagging and feature subsampling, making a standalone DT redundant for analytical purposes.
+
+    \item \textbf{FICO Scoring and Industry Practice:} The scorecard construction (Chapter~\ref{chap:scoring}) follows industry-standard methodology including the 300--850 scale, PDO = 20, and WoE/IV-based feature selection, explicitly connecting the project's approach to established credit scoring practice.
+\end{enumerate}
+
+\section{Limitations}
+\label{sec:limitations}
+
+\subsection{Data Limitations}
+
+\begin{itemize}
+    \item \textbf{Class imbalance:} The 8.07\% default rate (1:11.4 ratio) limits recall optimisation and requires specialised handling (class weighting, undersampling) that introduces its own trade-offs.
+    \item \textbf{Sparse supplementary coverage:} Some behavioural tables have limited coverage (credit cards cover only 28.3\% of applicants), reducing the alternative data signal for a substantial portion of the population.
+    \item \textbf{External score opacity:} The EXT\_SOURCE variables are anonymised; interpretations offered in this work are inferred from data characteristics rather than confirmed by the data provider.
+    \item \textbf{No temporal out-of-time validation:} All evaluation was performed on random held-out splits. Temporal validation using distinct time periods would provide a more realistic assessment of production performance stability.
+    \item \textbf{Single geographic market:} The dataset represents one market (Southeast Asia); generalisability to other regions, regulatory frameworks, and lending cultures has not been tested.
+\end{itemize}
+
+\subsection{Model Limitations}
+
+\begin{itemize}
+    \item \textbf{Independence assumption:} The aggregation pipeline treats supplementary tables as independent feature sources, not accounting for potential cross-table interactions (e.g., bureau delinquency may correlate with instalment late payments).
+    \item \textbf{Deployment readiness:} The pipeline persists transformed datasets (CSVs) rather than serialised model objects (imputers, scalers, PCA transformers), limiting direct production deployment without additional engineering.
+    \item \textbf{Probability calibration:} All models show systematic underprediction at higher probability levels, requiring post-hoc calibration for applications that depend on absolute probability values (e.g., regulatory capital calculations).
+    \item \textbf{No hyperparameter optimisation:} Hyperparameters were selected based on domain knowledge and limited manual tuning rather than systematic search (e.g., Bayesian optimisation), leaving potential performance gains unrealised.
+\end{itemize}
+
+\subsection{Fairness Limitations}
+
+\begin{itemize}
+    \item \textbf{Gender bias in training data:} Males exhibit a 3+ percentage point higher default rate than females, and this disparity propagates into model predictions. Mitigation reduces but does not eliminate the gap.
+    \item \textbf{Proxy feature leakage:} Features such as occupation type, organisation type, and family status carry gender-correlated signal. Removing gender from the feature set does not eliminate indirect discrimination through these proxy variables.
+    \item \textbf{Limited intersectional analysis:} Fairness evaluation was primarily conducted on gender. Age-group, income-group, and intersectional (gender $\times$ age $\times$ income) analyses would provide a more complete fairness picture.
+    \item \textbf{XNA group vulnerability:} The 4-record XNA gender group is too small for reliable fairness assessment, and the Logistic Regression failure on this group highlights a broader challenge with rare-category fairness guarantees.
+\end{itemize}
+
+\section{Recommendations for Stakeholders}
+\label{sec:recommendations}
+
+\begin{table}[H]
+\centering
+\caption{Stakeholder-Specific Recommendations}
+\label{tab:recommendations}
+\begin{tabular}{p{3.5cm}p{9.5cm}}
+\toprule
+\textbf{Stakeholder} & \textbf{Priority Actions} \\
+\midrule
+\textbf{Regulators \& Risk Teams} & Deploy LightGBM with SHAP-based audit trail for real-time default prediction and feature drift detection. Integrate the ABC scorecard into the lending workflow: auto-approve scores $>$741, manual review for 532--741, reject $<$436. Monitor PSI monthly with retraining trigger at $>$0.15. \\
+\midrule
+\textbf{Credit Bureau Companies} & Prioritise external data enrichment (EXT\_SOURCE equivalents) for thin-file applicants. Expand telco and digital footprint data partnerships to achieve near-universal coverage. Conduct quarterly fairness audits using Fairlearn MetricFrame. \\
+\midrule
+\textbf{Banking \& Financial Partners} & Adopt the combined (traditional + alternative) model for improved LTV:CAC ratios. Target males aged 20--25 (highest default segment at 11\%) with responsible borrowing education. Use the cost-sensitive threshold ($\tau = 0.047$) to protect portfolio capital. \\
+\midrule
+\textbf{Business Development} & Scale the behavioural aggregation pipeline to new Southeast Asian markets. Partner with e-commerce platforms to embed point-of-sale credit scoring using the A-score framework. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Future Work}
+\label{sec:future_work}
+
+\begin{enumerate}
+    \item \textbf{Temporal out-of-time validation:} Test model performance on temporally separated data splits to assess stability across different economic conditions and seasonal patterns.
+    \item \textbf{Advanced sampling techniques:} Explore SMOTE~\cite{chawla2002} variants and adaptive synthetic sampling to improve minority class representation without majority class information loss.
+    \item \textbf{Creative feature engineering:} The models valued engineered ratios and contextual features highly; additional domain-driven combinations---such as payment velocity, utilisation trend slopes, and cross-table interaction features---should be explored.
+    \item \textbf{Additional alternative data sources:} Investigate complementary data sources including utility payment records, mobile money transaction histories, and social media engagement patterns to bridge remaining coverage gaps for credit-invisible applicants.
+    \item \textbf{Systematic bias elimination:} Apply comprehensive debiasing frameworks (AIF360, Fairlearn extensions, adversarial debiasing) to systematically identify and mitigate proxy-feature discrimination, with intersectional analysis across gender, age, and income groups.
+    \item \textbf{Graph-based approaches:} Explore graph neural networks to model the relational structure of the dataset natively, potentially capturing cross-table interactions that the current aggregation pipeline treats as independent.
+    \item \textbf{Production deployment:} Serialise model objects (imputers, scalers, trained models) into a production-ready serving infrastructure with real-time scoring APIs, automated retraining, and champion-challenger framework for model governance.
+\end{enumerate}

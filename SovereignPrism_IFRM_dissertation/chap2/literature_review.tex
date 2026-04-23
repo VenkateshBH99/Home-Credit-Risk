@@ -1,0 +1,265 @@
+\chapter{Literature Review and Market Research}
+\label{chap:litreview}
+
+This chapter reviews the theoretical and practical foundations underlying the project's approach to credit risk modelling, alternative data integration, algorithmic fairness, and model governance.
+
+\section{Traditional Credit Scoring}
+\label{sec:traditional_scoring}
+
+\subsection{Bureau-Based Scoring Systems}
+
+Credit scoring in consumer lending has historically relied on data maintained by credit bureaus---primarily TransUnion, Equifax, and Experian in the United States, and analogous agencies in other markets. The most widely adopted scoring framework is the FICO score, developed by the Fair Isaac Corporation, which ranges from 300 to 850 and is computed from five categories of bureau data: payment history (35\%), amounts owed (30\%), length of credit history (15\%), new credit (10\%), and credit mix (10\%).
+
+These bureau-based systems are effective for consumers with established credit histories, but they rely fundamentally on the existence of prior credit records. When an applicant has no bureau file---either because they have never borrowed from a reporting institution or because they are new to a market---the traditional scoring infrastructure cannot produce a meaningful risk estimate~\cite{cfpb2022}.
+
+Credit scorecards, as described by Siddiqi~\cite{siddiqi2012}, are mathematical formulae that assign points to applicant characteristics to predict future default behaviour. Traditional scorecards favour parsimony, typically using 5--15 interpretable variables. The scorecard format remains the industry standard for regulatory compliance because each variable's contribution to the final score is transparent and auditable.
+
+\subsection{The A/B/C Score Taxonomy}
+
+Credit scores used in industry can be categorised into three families based on when they are applied in the customer lifecycle~\cite{siddiqi2012}:
+
+\begin{itemize}
+    \item \textbf{A-Score (Origination):} Evaluated at the point of application using demographics, loan terms, and external credit history to make approve/decline decisions. This is the primary gatekeeper for credit access.
+    \item \textbf{B-Score (Behavioural):} Applied post-origination using repayment patterns across POS, instalment, and credit card accounts for portfolio monitoring and early warning. It detects deterioration in borrower behaviour before missed payments occur.
+    \item \textbf{C-Score (Collection):} Applied to delinquent accounts using days-past-due (DPD) patterns and overdue amounts for collection prioritisation. It helps allocate limited collection resources to the accounts most likely to recover.
+\end{itemize}
+
+This taxonomy is central to the present project, which implements all three score types using disjoint feature subsets from the Home Credit dataset.
+
+\subsection{Observation-Scoring-Performance Window}
+
+A critical concept in behavioural scoring is the temporal framework that governs how scores are developed and validated:
+
+\begin{enumerate}
+    \item \textbf{Observation Period} (typically 3--12 months, commonly 6): The window during which customer behavioural data is collected to create model features---credit utilisation, payment history, delinquency patterns, and spending behaviour.
+    \item \textbf{Scoring Month} (snapshot date): The point at which the behaviour score is calculated. All variables are computed using data up to this month.
+    \item \textbf{Performance Period} (typically 6--12 months): The future outcome window used to determine whether the customer becomes ``Good'' or ``Bad.'' A common definition of ``Bad'' is 90+ days past due, default, or charge-off.
+\end{enumerate}
+
+Multiple monthly scoring snapshots are typically used to increase sample size and reduce seasonal effects. In the Home Credit dataset, the temporal structure is implicit in the supplementary tables (bureau balance, POS cash, credit card balance, instalment payments), which provide monthly behavioural snapshots over varying time horizons.
+
+\section{Alternative Data in Credit Risk}
+\label{sec:alternative_data}
+
+\subsection{Types of Alternative Data}
+
+Alternative data refers to information sources beyond traditional credit bureau records that can provide predictive signals about a borrower's creditworthiness. Berg et al.~\cite{berg2020} demonstrated that digital footprints---including device type, operating system, email domain, and browsing patterns---can predict default as accurately as traditional credit bureau scores, particularly for thin-file applicants.
+
+In the context of the Home Credit dataset, alternative data manifests through several proxy features:
+
+\begin{table}[H]
+\centering
+\caption{Alternative Data Proxy Mapping in the Home Credit Dataset}
+\label{tab:alt_data_mapping}
+\begin{tabular}{p{3cm}p{3.5cm}p{4cm}p{3.5cm}}
+\toprule
+\textbf{Dataset Feature} & \textbf{Real-World Equivalent} & \textbf{What It Captures} & \textbf{Value for Thin-File} \\
+\midrule
+EXT\_SOURCE\_1/2/3 & External model scores (e.g., LexisNexis, telco) & Non-bureau risk signals & Risk signal even with zero bureau records \\
+Phone flags & Telco/digital footprint & Device stability, phone ownership duration & Scorable signal where bureau data is empty \\
+Social circle defaults & Social network risk scoring & Peer default patterns in 30/60 days & Behavioural proxy via social connections \\
+Document flags & KYC/identity verification & Number of identity documents submitted & Willingness to verify correlates with repayment \\
+Housing features & Property records, utility data & Asset proxies: property quality, age, size & Stable housing indicates lower risk \\
+Regional risk & Area-level socioeconomic data & Geographic risk concentration & Context for applicants in low-risk regions \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key insight is that traditional features only work when the applicant already has bureau records. For the approximately 1,700 credit-invisible and 50,000 thin-file applicants in the Home Credit dataset, alternative data provides independent risk signals that do not require prior credit history.
+
+\subsection{Prior Work on the Home Credit Dataset}
+
+The Home Credit Default Risk competition~\cite{kaggle2018} attracted over 7,000 teams and produced several notable analyses. The 5th-place solution by Krak\'{o}w-Lublin-Zhabinka~\cite{krakow2018} demonstrated that extensive feature engineering across all supplementary tables, combined with gradient boosting ensembles, could achieve AUC scores above 0.80. Their approach emphasised the importance of aggregating payment timing features and creating credit utilisation ratios.
+
+Narayanan~\cite{narayanan2020} published a three-part analysis covering business understanding, data cleaning, EDA, feature engineering, and model deployment. Key findings included the dominance of \texttt{EXT\_SOURCE} features in prediction, the importance of handling the \texttt{DAYS\_EMPLOYED} anomaly (365,243 sentinel value in 18\% of records), and the benefit of combining supplementary table features for thin-file applicants.
+
+Common themes across published analyses include: (1) external source scores consistently rank as the top predictors; (2) tree-based ensemble models (XGBoost, LightGBM) outperform linear models on this dataset; (3) careful feature engineering from supplementary tables provides meaningful AUC uplift; and (4) class imbalance requires explicit handling through sampling or cost-sensitive learning.
+
+\subsection{Regulatory Landscape}
+
+The use of alternative data in credit scoring is subject to evolving regulatory frameworks. The Consumer Financial Protection Bureau (CFPB)~\cite{cfpb2022} has documented the extent of credit invisibility and acknowledged the potential of alternative data to expand financial inclusion. However, regulators also emphasise the risk that alternative data may introduce proxy discrimination---features that appear neutral (e.g., phone stability, postcode) may correlate with protected attributes such as age, gender, or ethnicity.
+
+In Southeast Asia, where Home Credit operates, the Personal Data Protection Act (PDPA) in Singapore and Thailand, and the Data Privacy Act (DPA) in the Philippines, impose requirements on consent, data minimisation, and the right to erasure. Any production deployment of the models developed in this project would need to comply with these frameworks, particularly regarding the use of behavioural data and the transparency of automated decision-making.
+
+\section{Machine Learning for Credit Risk}
+\label{sec:ml_credit_risk}
+
+\subsection{Evolution from Logistic Regression to Gradient Boosting}
+
+Credit risk modelling has evolved through several generations of techniques. Logistic Regression remains the industry standard for regulatory-grade scorecards due to its transparency: each feature contributes a clearly interpretable coefficient, and the model produces calibrated probabilities. However, logistic models are constrained by their linear decision boundary and cannot natively capture feature interactions without explicit engineering.
+
+Decision Trees introduced the ability to model non-linear relationships and interactions through recursive partitioning. However, single decision trees suffer from high variance---small changes in training data can produce substantially different tree structures. This instability makes them unreliable as standalone production models.
+
+Random Forests~\cite{breiman2001} addressed the variance problem through bagging (bootstrap aggregating) and feature subsampling, decorrelating the ensemble members and producing stable predictions. The trade-off is reduced interpretability compared to logistic regression.
+
+Gradient boosting methods, including XGBoost~\cite{chen2016} and LightGBM~\cite{ke2017}, represent the current state of the art for tabular data. These methods build trees sequentially, with each tree fitting the residual errors of the ensemble. XGBoost introduced built-in L1/L2 regularisation and sparse-aware splitting (automatic missing value handling), while LightGBM's leaf-wise growth strategy achieves lower loss with greater computational efficiency than traditional level-wise approaches.
+
+\subsection{Handling Class Imbalance}
+
+Credit default datasets are inherently imbalanced---default rates typically range from 2\% to 10\%, producing significant class skew. Without explicit handling, models optimised for accuracy will learn to predict the majority class (non-default) almost exclusively.
+
+Several approaches address this imbalance:
+
+\begin{itemize}
+    \item \textbf{Class weighting:} Adjusting the loss function to penalise misclassification of the minority class more heavily. In scikit-learn, \texttt{class\_weight='balanced'} sets weights inversely proportional to class frequencies. In XGBoost, \texttt{scale\_pos\_weight} provides analogous functionality.
+    \item \textbf{Undersampling:} Reducing the majority class to match or approach the minority class size. Ensemble undersampling---splitting the majority class into $K$ folds and training one model per fold with all minority samples---preserves information while balancing the training set.
+    \item \textbf{Oversampling:} Creating synthetic minority examples, most commonly through SMOTE~\cite{chawla2002}, which interpolates between existing minority samples in feature space.
+    \item \textbf{Threshold adjustment:} Rather than modifying the training data, the classification threshold can be shifted from the default 0.5 to a value that optimises the desired metric (e.g., recall or profit).
+\end{itemize}
+
+\subsection{Why Tree-Based Models Suit Credit Risk}
+
+Several properties of tree-based ensembles make them particularly well-suited to credit risk data:
+
+\begin{enumerate}
+    \item \textbf{Non-linear interactions:} Default risk is driven by complex interactions between features (e.g., the combination of high credit utilisation and short employment tenure) that linear models cannot capture without explicit feature engineering.
+    \item \textbf{Native missing value handling:} XGBoost and LightGBM learn optimal split directions for missing values during training, which is critical for credit data where 50+ features may have significant missingness.
+    \item \textbf{Feature importance:} Built-in feature importance measures (gain, split count) and compatibility with SHAP provide both global and local interpretability.
+    \item \textbf{Robustness to outliers:} Split-based decision rules are inherently less sensitive to extreme values than distance-based or gradient-based methods.
+    \item \textbf{Scale invariance:} Tree-based models do not require feature scaling, simplifying the preprocessing pipeline.
+\end{enumerate}
+
+\subsection{Why Decision Tree Was Not Used as a Separate Baseline}
+\label{subsec:no_decision_tree}
+
+A standalone Decision Tree was not included as a separate baseline in this project. Random Forest already captures and extends the Decision Tree paradigm through bagging and feature subsampling. A single Decision Tree is effectively a degenerate case of Random Forest with \texttt{n\_estimators=1} and no feature restriction.
+
+The Random Forest comparison already demonstrates the value of the tree-based paradigm while simultaneously showing how much improvement bagging provides over a single tree. Including a standalone Decision Tree would add a known-inferior model without providing additional analytical insight. Furthermore, the primary comparison of interest is between interpretable models (Logistic Regression) and high-performance ensembles (Random Forest, XGBoost, LightGBM), a comparison that is already well-served by the four model families selected.
+
+\section{Evaluation Metrics for Credit Models}
+\label{sec:evaluation_metrics}
+
+\subsection{Why Accuracy Fails for Imbalanced Data}
+
+With a default rate of 8.07\% in the Home Credit dataset, a na\"ive model that predicts every applicant as non-default achieves 91.93\% accuracy. This makes accuracy a misleading metric for credit risk evaluation. The appropriate metrics must separately assess the model's ability to identify defaults (sensitivity/recall) and its ability to avoid false alarms (precision/specificity).
+
+\subsection{Recall vs Precision Trade-off in Credit Risk}
+
+The tension between recall and precision maps directly to business trade-offs in lending:
+
+\begin{itemize}
+    \item \textbf{Recall (Loss Prevention):} $TP / (TP + FN)$. ``Of all actual defaulters, how many did we catch?'' Low recall means undetected defaults slip through, resulting in direct financial losses from unpaid principal.
+
+    \item \textbf{Precision (Safe Bet):} $TP / (TP + FP)$. ``When we predict default, are we right?'' Low precision means good borrowers are incorrectly flagged as risky, resulting in unnecessary rejection and lost interest income.
+
+    \item \textbf{Specificity (Opportunity):} $TN / (TN + FP)$. ``Of all good borrowers, how many did we approve?'' Low specificity means the model is too conservative, leaving profitable lending opportunities on the table.
+
+    \item \textbf{Negative Predictive Value (Creditworthiness):} $TN / (TN + FN)$. ``When we say `safe,' is the borrower actually safe?'' Low NPV means defaults contaminate the approved portfolio.
+\end{itemize}
+
+These metrics are paired by the type of error they are sensitive to. Recall and NPV are both degraded by false negatives (missed defaults), while Precision and Specificity are both degraded by false positives (false alarms). In banking, false negatives (missed defaults) typically cost the full loan principal (\$10,000+), while false positives (rejected good customers) cost only the lost interest income and acquisition cost (\$500--\$1,000). This asymmetry strongly favours recall-optimised models.
+
+\subsection{AUC-ROC vs Precision-Recall Curves}
+
+The Receiver Operating Characteristic (ROC) curve plots the True Positive Rate (recall) against the False Positive Rate (1 -- specificity) across all classification thresholds~\cite{fawcett2006}. The Area Under the ROC Curve (AUC-ROC) provides a threshold-independent measure of discriminative ability, where 0.5 represents random guessing and 1.0 represents perfect separation.
+
+For imbalanced datasets, the Precision-Recall (PR) curve is often more informative~\cite{saito2015} because it focuses exclusively on the minority class performance. The PR curve plots precision against recall across thresholds, and the Area Under the PR Curve (PR-AUC) penalises models that achieve high recall only by generating many false positives.
+
+In this project, AUC-ROC is used as the primary comparison metric (consistent with the Kaggle competition and industry practice), while PR curves are used as supplementary diagnostics to assess minority-class performance.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{discussion/PRvROC.jpeg}
+    \caption{Comparison of ROC and Precision-Recall curves. The ROC curve (right) shows the trade-off between true positive rate and false positive rate; the PR curve (left) focuses on minority class performance.}
+    \label{fig:pr_vs_roc}
+\end{figure}
+
+\subsection{KS Statistic, Gini, Calibration, and Lift}
+
+Beyond AUC, several additional metrics are standard in credit risk model validation:
+
+\begin{itemize}
+    \item \textbf{KS Statistic (Kolmogorov-Smirnov):} Measures the maximum separation between the cumulative distribution functions of defaults and non-defaults. A KS value below 0.2 is considered poor, 0.2--0.4 average, 0.4--0.6 good, and above 0.6 excellent.
+    \item \textbf{Gini Coefficient:} Defined as $2 \times \text{AUC} - 1$, it provides a normalised measure of discriminative power on a 0-to-1 scale.
+    \item \textbf{Calibration:} Assesses whether predicted probabilities match observed default frequencies. A well-calibrated model predicting 10\% default probability should observe approximately 10\% defaults in that cohort.
+    \item \textbf{Lift:} Measures how much better the model performs compared to random selection. A lift of 3.74$\times$ in the top decile means the model's highest-risk segment is 3.74 times more likely to default than the overall population average.
+\end{itemize}
+
+\subsection{Profit/Loss Optimal Threshold}
+
+The optimal classification threshold can be derived from business economics rather than statistical criteria alone. The simplified profit formula for a loan portfolio is:
+
+\begin{equation}
+\text{Total Profit} = (TN \times \text{Gain}_{\text{interest}}) - (FN \times \text{Cost}_{\text{default}}) - (FP \times \text{Cost}_{\text{admin}})
+\label{eq:profit}
+\end{equation}
+
+When a default ($FN$) costs \$10,000 in lost principal and a false alarm ($FP$) costs \$500 in lost acquisition cost, the cost-ratio rule estimates the optimal threshold as:
+
+\begin{equation}
+\tau = \frac{\text{Cost}_{FP}}{\text{Cost}_{FP} + \text{Cost}_{FN}} = \frac{500}{500 + 10{,}000} \approx 0.047
+\label{eq:threshold}
+\end{equation}
+
+This suggests an extremely conservative threshold, flagging anyone with even a $\sim$5\% chance of default as a risk. In practice, the optimal threshold is found by sweeping over a range of values and selecting the one that maximises Equation~\ref{eq:profit} on the validation set.
+
+\section{Algorithmic Fairness in Lending}
+\label{sec:fairness_lit}
+
+\subsection{Fairness Definitions}
+
+Algorithmic fairness in credit scoring has become a critical concern as machine learning models increasingly influence lending decisions. Several mathematical definitions of fairness have been proposed, each capturing a different aspect of equitable treatment~\cite{hardt2016}:
+
+\begin{itemize}
+    \item \textbf{Demographic Parity:} The probability of a positive prediction (e.g., predicted default) should be equal across protected groups. Formally, $P(\hat{Y}=1 | A=a) = P(\hat{Y}=1 | A=b)$ for groups $a$ and $b$.
+    \item \textbf{Equalised Odds:} The true positive rate and false positive rate should be equal across groups. This ensures the model is equally accurate for all groups, not just equally likely to make predictions.
+    \item \textbf{Disparate Impact Ratio:} The ratio of selection rates between groups, where a ratio below 0.80 (the ``four-fifths rule'') is considered evidence of adverse impact under US employment discrimination law and is increasingly applied to lending.
+\end{itemize}
+
+Importantly, Hardt et al.~\cite{hardt2016} demonstrated that it is generally impossible to satisfy all fairness criteria simultaneously, particularly when base rates (actual default rates) differ between groups. This creates an inherent tension between fairness definitions that must be resolved through explicit design choices.
+
+\subsection{Sources of Bias}
+
+Bias in credit scoring can originate from two distinct sources:
+
+\begin{enumerate}
+    \item \textbf{Data bias:} Historical lending data reflects past discrimination. If certain demographic groups were historically denied credit or offered unfavourable terms, the training data will encode these patterns. Features that appear neutral---such as postcode, phone stability, or education level---may serve as proxies for protected attributes.
+    \item \textbf{Algorithmic bias:} The model's learning process may amplify existing biases. Linear models are particularly susceptible because they absorb data biases directly into their coefficients. Tree-based models distribute bias across many splits, potentially diluting (but not eliminating) the effect of any single biased feature.
+\end{enumerate}
+
+\subsection{Mitigation Strategies}
+
+Three categories of fairness interventions exist~\cite{bird2020}:
+
+\begin{enumerate}
+    \item \textbf{Pre-processing:} Modify the training data before model fitting. Techniques include resampling to equalise group representation, reweighting samples to counteract historical bias, and removing or transforming proxy features.
+    \item \textbf{In-processing:} Incorporate fairness constraints into the model's objective function during training. Exponentiated gradient methods add fairness penalty terms that trade off a small amount of predictive accuracy for improved fairness metrics.
+    \item \textbf{Post-processing:} Adjust model outputs after training. The \texttt{ThresholdOptimizer} in Fairlearn finds group-specific classification thresholds that equalise selection rates or equalise error rates, without retraining the model.
+\end{enumerate}
+
+In this project, post-processing via ThresholdOptimizer is the primary mitigation strategy, as it allows direct comparison of unconstrained and fairness-constrained model performance.
+
+\section{Model Interpretability and Governance}
+\label{sec:interpretability_lit}
+
+\subsection{SHAP and LIME Frameworks}
+
+Model interpretability is essential for regulatory compliance, stakeholder trust, and debugging. Two complementary frameworks are used in this project:
+
+\textbf{SHAP} (SHapley Additive exPlanations)~\cite{lundberg2017} assigns each feature a contribution value based on cooperative game theory. For a prediction $f(x)$, the SHAP value $\phi_i$ for feature $i$ represents the average marginal contribution of that feature across all possible feature coalitions. The \texttt{TreeExplainer} variant computes exact SHAP values efficiently for tree-based models, enabling both global feature importance rankings and individual prediction explanations.
+
+\textbf{LIME} (Local Interpretable Model-agnostic Explanations)~\cite{ribeiro2016} approximates any complex model locally with a simple interpretable model (typically a sparse linear model). For a given prediction, LIME perturbs the input features, observes how the predictions change, and fits a linear model to the local neighbourhood. This provides human-readable explanations of individual decisions, which are critical for adverse action reason codes in credit lending.
+
+\subsection{Model Monitoring}
+
+Production credit models require continuous monitoring to detect performance degradation:
+
+\begin{itemize}
+    \item \textbf{Population Stability Index (PSI):} Measures the shift in score distributions between development and production populations~\cite{yurdakul2020}. PSI below 0.10 indicates stability; 0.10--0.25 warrants investigation; above 0.25 indicates significant drift requiring model recalibration or redevelopment.
+    \item \textbf{Characteristic Stability Index (CSI):} The feature-level analogue of PSI, identifying which specific features are driving observed population shifts.
+    \item \textbf{AUC/Gini Drift:} Tracking discriminative performance over time using out-of-time validation windows.
+\end{itemize}
+
+\subsection{Regulatory Requirements}
+
+Model risk management is governed by regulatory guidance such as the OCC's SR 11-7~\cite{occ2011}, which requires financial institutions to maintain comprehensive model documentation, independent validation, and ongoing monitoring. Key requirements include:
+
+\begin{itemize}
+    \item Models must be documented with sufficient detail for independent review.
+    \item Assumptions and limitations must be explicitly stated.
+    \item Models must be validated on out-of-sample data.
+    \item Ongoing monitoring must detect when model performance degrades beyond acceptable thresholds.
+    \item Decisions derived from models must be explainable to regulators, auditors, and affected consumers.
+\end{itemize}
+
+The project's inclusion of SHAP/LIME explainability, Fairlearn fairness evaluation, and PSI/CSI monitoring directly addresses these regulatory expectations, demonstrating that the modelling framework is governance-ready rather than purely experimental.

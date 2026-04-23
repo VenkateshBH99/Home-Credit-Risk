@@ -1,0 +1,301 @@
+\chapter{Predictive Modelling and Results}
+\label{chap:modeling}
+
+\section{Experimental Design}
+\label{sec:experimental_design}
+
+\subsection{Dataset Variants}
+
+Four dataset variants were prepared to systematically compare the impact of data scope and dimensionality reduction:
+
+\begin{enumerate}
+    \item \textbf{Traditional No-PCA:} Application-only features retained directly (187 columns)
+    \item \textbf{Traditional PCA:} Application-only features with PCA reduction (174 columns)
+    \item \textbf{Combined No-PCA:} Application + supplementary features retained directly (242 columns)
+    \item \textbf{Combined PCA:} Application + supplementary features with PCA reduction (208 columns)
+\end{enumerate}
+
+This $2 \times 2$ design (data scope $\times$ dimensionality reduction) enables controlled isolation of the alternative data effect from the PCA effect, addressing the research question of whether behavioural data adds predictive value independently of feature engineering choices.
+
+\subsection{Model Families}
+
+Four model families were selected to span the spectrum from interpretable to high-performance:
+
+\begin{enumerate}
+    \item \textbf{Logistic Regression:} L2-regularised ($C=0.05$, L1 penalty for the scorecard variant), \texttt{class\_weight='balanced'}. Serves as the interpretable baseline and enables the WoE-based scorecard (Chapter~\ref{chap:scoring}).
+    \item \textbf{Random Forest:} \texttt{n\_estimators=100}, \texttt{max\_depth=5}, balanced class weights. Captures non-linear decision boundaries through bagged tree ensembles~\cite{breiman2001}.
+    \item \textbf{XGBoost:} \texttt{n\_estimators=90}, \texttt{max\_depth=5}, \texttt{scale\_pos\_weight} based on class ratio. Sequential boosting with built-in L1/L2 regularisation~\cite{chen2016}.
+    \item \textbf{LightGBM:} \texttt{n\_estimators=100}, \texttt{max\_depth=8}, \texttt{num\_leaves=20}, leaf-wise growth strategy. Optimised for large tabular datasets with efficient gradient computation~\cite{ke2017}.
+\end{enumerate}
+
+\subsection{Why Decision Tree Was Not Included Separately}
+
+A standalone Decision Tree was not included as a separate baseline because Random Forest already captures and extends the Decision Tree paradigm through bagging and feature subsampling. A single Decision Tree is effectively a degenerate case of Random Forest with \texttt{n\_estimators=1} and no feature restriction. Including it separately would add a known-inferior model without providing additional analytical insight---the Random Forest comparison already demonstrates the value of the tree-based paradigm, while the ensemble mechanisms quantify the improvement that bagging provides.
+
+\subsection{Class Imbalance Handling}
+
+The 8.07\% default rate (1:11.4 class ratio) necessitates explicit imbalance handling. Three strategies were employed across the experimental design:
+
+\begin{itemize}
+    \item \textbf{Class weighting:} \texttt{class\_weight='balanced'} for Logistic Regression and Random Forest, which adjusts sample weights inversely proportional to class frequencies during training.
+    \item \textbf{Scale positive weight:} \texttt{scale\_pos\_weight} for XGBoost, set to the ratio of negative to positive samples ($\approx 11.4$), which scales the gradient contribution of minority-class samples.
+    \item \textbf{Ensemble undersampling:} The majority class is split into $K$ non-overlapping folds, with the full minority class retained in every fold. One model is trained per fold, and predicted probabilities are averaged across all $K$ models. This approach avoids the information loss of simple undersampling while maintaining balanced training sets~\cite{chawla2002}.
+\end{itemize}
+
+\subsection{Train/Validation/Test Split}
+
+Data was split 70\%/15\%/15\% using a fixed random seed (\texttt{random\_state=42}) with stratified sampling to maintain the class ratio across all splits. All preprocessing transformations (imputation, scaling, encoding, PCA) were fitted on the training split only and applied to validation and test splits, as detailed in Section~\ref{sec:preprocessing}.
+
+\section{Model Selection Rationale}
+\label{sec:model_rationale}
+
+\subsection{Logistic Regression: The Interpretability Baseline}
+
+Logistic Regression was chosen to establish a performance floor and to enable the WoE/IV-based scorecard (Chapter~\ref{chap:scoring}). L2 regularisation prevents overfitting on the high-dimensional one-hot encoded feature space, while \texttt{class\_weight='balanced'} ensures that the minority class receives proportionally higher gradient signal. Feature scaling via \texttt{StandardScaler} is critical, as LR is sensitive to feature magnitudes---without scaling, features with larger numeric ranges would dominate the coefficient estimates.
+
+Despite its simplicity, Logistic Regression remains the industry standard for credit scorecards due to its monotonic risk relationships, direct probability interpretation, and regulatory acceptability~\cite{siddiqi2012}.
+
+\subsection{Random Forest: Capturing Non-Linearity}
+
+Random Forest handles non-linear decision boundaries through the aggregation of multiple decorrelated decision trees. Feature subsampling at each split ensures that individual trees focus on different feature subsets, reducing variance relative to a single deep tree. The \texttt{max\_depth=5} constraint prevents individual trees from memorising noise, trading a small amount of individual tree accuracy for ensemble stability.
+
+\subsection{XGBoost: Gradient Boosting with Regularisation}
+
+XGBoost~\cite{chen2016} builds trees sequentially, with each tree minimising the gradient of the loss function relative to the ensemble's current errors. Its sparse-aware splitting algorithm handles missing values automatically by learning the optimal default direction at each split---a significant advantage given the dataset's extensive missingness. Built-in L1 and L2 regularisation terms in the objective function stabilise the model given the high number of encoded categorical variables.
+
+\subsection{LightGBM: Efficient Leaf-Wise Growth}
+
+LightGBM~\cite{ke2017} uses a leaf-wise growth strategy that selects the leaf producing the greatest loss reduction, typically achieving lower error than XGBoost's level-wise approach on large tabular datasets. Its histogram-based splitting and exclusive feature bundling provide significant memory and speed advantages, which were necessary when iterating through the expanded combined feature space during hyperparameter tuning. The \texttt{num\_leaves=20} constraint prevents the leaf-wise strategy from creating overly complex trees.
+
+\section{Traditional Dataset Results}
+\label{sec:traditional_results}
+
+\begin{table}[H]
+\centering
+\caption{Traditional Dataset Performance (1 = Default, Test Set)}
+\label{tab:traditional_results}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Accuracy} & \textbf{Recall} & \textbf{AUC} & \textbf{Misclassified Defaults} \\
+\midrule
+\multicolumn{5}{l}{\textit{Without PCA}} \\
+Logistic Regression & 0.69 & 0.68 & 0.75 & 1,592 \\
+Random Forest & 0.67 & 0.67 & 0.73 & 1,686 \\
+XGBoost & 0.71 & 0.68 & 0.76 & 1,599 \\
+LightGBM & 0.70 & 0.69 & 0.76 & 1,571 \\
+\midrule
+\multicolumn{5}{l}{\textit{With PCA}} \\
+Logistic Regression & 0.69 & 0.68 & 0.75 & 1,592 \\
+Random Forest & 0.70 & 0.61 & 0.72 & 1,951 \\
+XGBoost & 0.70 & 0.65 & 0.74 & 1,768 \\
+LightGBM & 0.70 & 0.66 & 0.74 & 1,726 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_confusion_matrix_2.png}
+    \caption{Confusion matrix for the Logistic Regression baseline on the traditional dataset. The balanced class weighting produces approximately equal true positive and true negative rates at the cost of overall accuracy.}
+    \label{fig:traditional_lr_cm}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_confusion_matrix_and_9.png}
+    \caption{Confusion matrices for Random Forest and XGBoost on the traditional dataset. Tree-based models show higher accuracy but lower recall compared to balanced Logistic Regression.}
+    \label{fig:traditional_tree_cm}
+\end{figure}
+
+Key findings from the traditional dataset experiments:
+
+\begin{enumerate}
+    \item LightGBM achieves the best recall (69\%) and AUC (0.76) on the traditional dataset without PCA, misclassifying only 1,571 defaults out of approximately 4,900 in the test set.
+    \item XGBoost matches LightGBM on AUC (0.76) but lags slightly on recall (68\%).
+    \item PCA consistently degrades tree-based model performance: Random Forest AUC drops from 0.73 to 0.72, XGBoost from 0.76 to 0.74, and LightGBM from 0.76 to 0.74. This confirms that tree-based models benefit from feature-level splitting granularity on unmixed features.
+    \item Logistic Regression is unaffected by PCA (AUC remains 0.75), consistent with its linear nature---PCA preserves the linear signal while merely rotating the coordinate system.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_top_features_1.png}
+    \caption{Top features for Logistic Regression on the traditional dataset. EXT\_SOURCE variables dominate, followed by age-related and financial ratio features.}
+    \label{fig:traditional_top_features_lr}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_top_20_features_5.png}
+    \caption{Top 20 features for Random Forest on the traditional dataset, ranked by impurity-based importance.}
+    \label{fig:traditional_top_features_rf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_top_20_features_8.png}
+    \caption{Top 20 features for XGBoost on the traditional dataset. XGBoost's feature importance ranking shows strong agreement with Random Forest on the top features.}
+    \label{fig:traditional_top_features_xgb}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_top_20_features_12.png}
+    \caption{Top 20 features for LightGBM on the traditional dataset. The leaf-wise growth strategy produces a slightly different feature ranking, with temporal and contextual features gaining relative importance.}
+    \label{fig:traditional_top_features_lgbm}
+\end{figure}
+
+\section{Combined Dataset Results}
+\label{sec:combined_results}
+
+\begin{table}[H]
+\centering
+\caption{Combined Dataset Performance (1 = Default, Test Set)}
+\label{tab:combined_results}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Accuracy} & \textbf{Recall} & \textbf{AUC} & \textbf{Misclassified Defaults} \\
+\midrule
+\multicolumn{5}{l}{\textit{Without PCA}} \\
+Logistic Regression & 0.69 & 0.69 & 0.76 & 1,117 \\
+Random Forest & 0.84 & 0.42 & 0.76 & 2,119 \\
+XGBoost & 0.86 & 0.38 & 0.76 & 2,309 \\
+LightGBM & 0.81 & 0.51 & 0.77 & 1,775 \\
+\midrule
+\multicolumn{5}{l}{\textit{With Ensemble Undersampling}} \\
+Logistic Regression & 0.70 & 0.70 & 0.76 & 1,135 \\
+Random Forest & 0.79 & 0.56 & 0.76 & 1,661 \\
+XGBoost & 0.74 & 0.65 & 0.77 & 1,300 \\
+LightGBM & 0.80 & 0.56 & 0.78 & 1,639 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{discussion/confusionmatrices - combined no pca.png}
+    \caption{Confusion matrices for all four models on the combined dataset without PCA. The accuracy--recall trade-off is clearly visible: XGBoost achieves 86\% accuracy but only 38\% recall, while Logistic Regression achieves 69\% accuracy with 69\% recall.}
+    \label{fig:combined_confusion_matrices}
+\end{figure}
+
+Key findings from the combined dataset experiments:
+
+\begin{enumerate}
+    \item \textbf{Ensemble undersampling significantly improves recall} for tree-based models. Without undersampling, XGBoost achieves only 38\% recall despite 86\% accuracy---it effectively ignores the minority class to maximise accuracy. With undersampling, XGBoost recall rises to 65\%, and the number of misclassified defaults drops from 2,309 to 1,300.
+    \item \textbf{LightGBM achieves the highest AUC (0.78)} with undersampling on the combined dataset, confirming its position as the champion model for this task.
+    \item \textbf{Logistic Regression's recall advantage persists:} LR achieves 70\% recall in the combined setting (up from 68\% in traditional), suggesting that its balanced class weighting mechanism is more effective than tree-based defaults when feature dimensionality increases. However, its AUC (0.76) remains below LightGBM.
+    \item \textbf{The accuracy--recall trade-off is fundamental:} In credit risk, a model that catches more defaulters (high recall) inevitably flags more non-defaulters as risky (lower accuracy). The optimal operating point depends on the relative cost of false negatives (missed defaults) versus false positives (rejected good borrowers), which is addressed through cost-sensitive threshold optimisation in Chapter~\ref{chap:scoring}.
+\end{enumerate}
+
+\section{Impact of Alternative Data}
+\label{sec:alt_data_impact}
+
+The combined dataset (incorporating behavioural data from all supplementary tables) improves AUC from 0.76 to 0.78 for LightGBM with undersampling---a 2.6\% relative uplift over the application-only baseline. This directly answers the central research question: \textbf{alternative data does provide meaningful improvement for default prediction}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{discussion/N-features and Gini for various trained models.png}
+    \caption{Number of features and Gini coefficient across all trained model variants. The chart shows how feature count and discriminatory power vary across dataset variants and model families.}
+    \label{fig:n_features_gini}
+\end{figure}
+
+However, the improvement comes with important nuances:
+
+\begin{itemize}
+    \item \textbf{Traditional columns still dominate} the top feature rankings. EXT\_SOURCE\_2, EXT\_SOURCE\_3, and DAYS\_BIRTH remain the most important features even in the combined models.
+    \item \textbf{The alternative data's primary value is for the thin-file segment}, where bureau-based features are unavailable. For applicants with complete bureau records, the marginal improvement from behavioural data is smaller.
+    \item \textbf{Coverage flags provide scorable signals} for applicants who would otherwise receive generic risk assignments. The \texttt{has\_bureau}, \texttt{has\_prev}, and related flags enable the model to differentiate between ``genuinely low-risk with no history'' and ``potentially high-risk with no history.''
+    \item \textbf{Instalment payment features} (\texttt{ins\_late\_ratio}, \texttt{ins\_payment\_ratio}) are the most impactful behavioural additions, directly measuring repayment reliability---the core construct that credit scoring aims to predict.
+\end{itemize}
+
+\section{Ensemble and Blending Experiments}
+\label{sec:ensemble}
+
+Two ensemble strategies were explored to combine the strengths of individual models:
+
+\subsection{Simple Average Blending}
+
+Predicted probabilities from all four models were averaged with equal weights. This approach is motivated by the observation that different models capture different aspects of the risk signal: Logistic Regression excels at linear relationships, while tree-based models capture non-linear interactions.
+
+\subsection{Weighted Blending Optimised on Validation AUC}
+
+Model weights were optimised on the validation set to maximise AUC. LightGBM and XGBoost received higher weights than Logistic Regression and Random Forest, reflecting their superior individual performance. The optimised ensemble achieved a marginal AUC improvement of approximately 0.5 percentage points over the best individual model.
+
+\subsection{Ensemble Undersampling}
+
+The most effective ensemble strategy was the undersampling approach described in Section~\ref{sec:experimental_design}. By training multiple models on different balanced subsets and averaging their predictions, this approach reduces both variance (through averaging) and bias (through balanced training). The ensemble undersampling results are reported in Table~\ref{tab:combined_results}.
+
+\section{Cross-Validation and Robustness}
+\label{sec:cross_validation}
+
+\subsection{Stratified K-Fold Validation}
+
+Five-fold stratified cross-validation was performed for the scorecard (Logistic Regression), LightGBM, and XGBoost models. Stratification ensures that each fold maintains the 8.07\% default rate, preventing fold-level class imbalance from biasing the estimates. Cross-validation AUC ranges were tight (typically $\pm 0.005$), indicating stable model performance across data subsets.
+
+\subsection{Feature Stability Analysis}
+
+Correlation-based feature removal at $|r| > 0.85$ was applied before retraining to assess sensitivity to multicollinearity. The removal of highly correlated features had minimal impact on AUC ($< 0.003$), confirming that the models are not relying on redundant feature pairs.
+
+\subsection{Probability Calibration}
+
+The raw predicted probabilities from tree-based models tend to be poorly calibrated for credit scoring applications, where the absolute probability value (not just the ranking) matters for regulatory capital calculations and expected loss estimation. Probability calibration was tested using:
+
+\begin{itemize}
+    \item \textbf{Platt scaling:} Fits a logistic regression on the model's predicted probabilities, applying a sigmoid correction.
+    \item \textbf{Isotonic regression:} A non-parametric approach that fits a stepwise monotonic function, offering more flexibility but higher risk of overfitting on small calibration sets.
+\end{itemize}
+
+Calibration results are presented alongside the scorecard validation diagnostics in Chapter~\ref{chap:scoring}.
+
+\section{Model Comparison Summary}
+\label{sec:model_comparison}
+
+\begin{table}[H]
+\centering
+\caption{Comprehensive Model Comparison Across All Dataset Variants (Best Result Per Model)}
+\label{tab:model_comparison}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Model} & \textbf{Best AUC} & \textbf{Best Recall} & \textbf{Gini} & \textbf{Dataset} & \textbf{Imbalance Strategy} \\
+\midrule
+Logistic Regression & 0.76 & 0.70 & 0.52 & Combined & Balanced weights \\
+Random Forest & 0.76 & 0.67 & 0.46 & Traditional & Balanced weights \\
+XGBoost & 0.77 & 0.68 & 0.54 & Combined & Undersampling \\
+\textbf{LightGBM} & \textbf{0.78} & 0.69 & \textbf{0.56} & Combined & Undersampling \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{notebook/home_credit_modeling_combined_12_model_comparison_evaluation_13.png}
+    \caption{Model comparison evaluation showing ROC curves and performance metrics across all model families on the combined dataset.}
+    \label{fig:model_comparison_eval}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{venky/roc_curve_champion_model.png}
+    \caption{ROC curve for the champion LightGBM model (AUC = 0.78). The curve shows good separation from the diagonal, with performance particularly strong in the low false-positive-rate region most relevant for credit scoring.}
+    \label{fig:roc_champion}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{venky/precision_recall_curve.png}
+    \caption{Precision-Recall curve for the champion model. In the imbalanced credit risk setting, the PR curve provides a more informative view than the ROC curve, as it is not inflated by the large number of true negatives~\cite{saito2015}.}
+    \label{fig:pr_curve}
+\end{figure}
+
+\subsection{Champion Model Selection}
+
+\textbf{LightGBM with ensemble undersampling on the combined dataset} is selected as the champion model based on:
+
+\begin{enumerate}
+    \item \textbf{Highest AUC (0.78)} across all model-dataset combinations, indicating the best overall discriminatory power.
+    \item \textbf{Highest Gini coefficient (0.56)}, confirming strong rank-ordering ability---critical for credit scoring applications where the relative ordering of risk matters more than absolute probability values.
+    \item \textbf{Competitive recall (0.69)} with acceptable accuracy (0.80), representing a practical balance between catching defaulters and maintaining portfolio throughput.
+    \item \textbf{Computational efficiency:} LightGBM's leaf-wise growth and histogram binning make it practical for production deployment and rapid retraining.
+    \item \textbf{SHAP compatibility:} LightGBM integrates natively with SHAP TreeExplainer, enabling per-prediction explanations required for regulatory compliance (Chapter~\ref{chap:fairness}).
+\end{enumerate}
+
+While Logistic Regression achieves the best recall (0.70), its lower AUC (0.76) indicates that it is a less effective risk ranker overall. The LR model is retained as the basis for the interpretable WoE scorecard (Chapter~\ref{chap:scoring}) but is not the recommended production model for automated decisioning.

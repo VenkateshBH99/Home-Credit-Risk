@@ -1,0 +1,228 @@
+\chapter{Credit Scoring and Business Application}
+\label{chap:scoring}
+
+\section{Logistic Regression Scorecard}
+\label{sec:scorecard}
+
+While LightGBM was selected as the champion model for discriminatory power (Chapter~\ref{chap:modeling}), a logistic regression-based scorecard was developed in parallel using the WoE/IV-selected features. The scorecard serves a distinct purpose: it translates model predictions into a normalised credit score that is interpretable by business users, auditable by regulators, and compatible with existing credit decisioning infrastructure~\cite{siddiqi2012}.
+
+The scorecard translates model log-odds into a normalised 300--850 credit score scale, following industry conventions used by FICO and major credit bureaus:
+
+\begin{equation}
+\text{Score} = \text{Offset} + \text{Factor} \times \ln(\text{odds})
+\label{eq:scorecard}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item \textbf{Offset} is set to 600 (the base score corresponding to 50:50 odds)
+    \item \textbf{Factor} $= \text{PDO} / \ln(2)$, where PDO (Points to Double Odds) is 20
+\end{itemize}
+
+Every 20-point increase in the score doubles the applicant's creditworthiness odds. This scaling ensures that the score has a consistent, predictable relationship with risk that loan officers can rely on without understanding the underlying model mechanics.
+
+\subsection{Score Distribution and Validation}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{pptx/customer risk scoring validatoin results - score distribution by default status.png}
+    \caption{Score distribution by default status on the validation set. Defaulters (red) are concentrated in lower score ranges while non-defaulters (blue) cluster in higher ranges, confirming genuine predictive separation.}
+    \label{fig:score_dist}
+\end{figure}
+
+The score distribution shows clear separation between defaulters and non-defaulters, confirming the scorecard's predictive power. Every score shown is computed on the validation set---a separate group of applicants the model never saw during training. The overlap zone between the two distributions (approximately 450--600) represents the segment where automated decisions are least reliable and human-in-the-loop review is recommended.
+
+\subsection{Score Band Performance}
+
+\begin{table}[H]
+\centering
+\caption{Credit Score Interpretation Bands and Associated Risk Levels}
+\label{tab:score_bands}
+\begin{tabular}{llp{7cm}}
+\toprule
+\textbf{Score Range} & \textbf{Risk Level} & \textbf{Recommended Action} \\
+\midrule
+741--850 & Very Low & Auto-approve; standard monitoring \\
+627--741 & Low & Approve with standard terms \\
+532--627 & Moderate & Manual review recommended; may require collateral \\
+436--532 & High & Enhanced due diligence; higher interest rate or reduced limit \\
+300--436 & Very High & Decline or require guarantor; collections priority \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Applicants in the lowest score band (300--436) are approximately 20$\times$ more likely to default than those in the highest band (741--850). This risk gradient demonstrates the scorecard's practical utility for tiered lending decisions.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{pptx/customer risk scoring validatoin results - default rate by score band.png}
+    \caption{Default rate by score band on the validation set. A clear monotonic decrease in default rate as scores increase validates the scorecard's risk-ranking ability.}
+    \label{fig:default_by_band}
+\end{figure}
+
+\section{A-Score / B-Score / C-Score Framework}
+\label{sec:abc_framework}
+
+Beyond the single origination scorecard, the project implements a complete credit customer lifecycle scoring system with three distinct score families. This A/B/C framework mirrors industry practice where different scores serve different operational purposes at different points in the customer relationship~\cite{siddiqi2012}.
+
+\begin{table}[H]
+\centering
+\caption{A/B/C Score Framework: Lifecycle-Based Credit Scoring System}
+\label{tab:abc_scores}
+\begin{tabular}{p{1.5cm}p{2cm}p{3cm}p{1.5cm}p{2.5cm}p{3cm}}
+\toprule
+\textbf{Score} & \textbf{When?} & \textbf{Data} & \textbf{AUC} & \textbf{Purpose} & \textbf{Top Features} \\
+\midrule
+A-Score & At application & Application + Bureau (170 features) & 0.716 & Approve/decline & EXT\_SOURCE\_2, EXT\_SOURCE\_1, EXT\_SOURCE\_3, EDUCATION, DAYS\_BIRTH \\
+B-Score & Post-origination & POS/Instalment/CC behaviour (34 features) & 0.616 & Portfolio monitoring & pos\_installments\_left, pos\_months\_total, ins\_late\_ratio \\
+C-Score & Delinquent accounts & DPD patterns, overdue amounts (13 features) & 0.579 & Collection priority & ins\_late\_ratio, bur\_amt\_overdue, pos\_dpd\_mean \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Score Design Rationale}
+
+The A-score performs best (AUC = 0.716) because it has access to the richest feature set, including the dominant EXT\_SOURCE variables and demographic features available at application time. The B-score and C-score have lower AUC because behavioural and collection data are noisier and more sparsely populated, but they serve operationally distinct purposes:
+
+\begin{itemize}
+    \item \textbf{A-Score (Origination):} Used for the approve/decline decision at the point of application. This is the most consequential score, as it determines who enters the portfolio.
+    \item \textbf{B-Score (Behavioural):} Used for ongoing portfolio monitoring, credit limit management, and early warning detection. Computed monthly on active accounts using repayment behaviour data that accumulates over time.
+    \item \textbf{C-Score (Collection):} Used to prioritise collection efforts when accounts become delinquent. Focuses on recoverability signals to allocate collection resources efficiently.
+\end{itemize}
+
+The feature subsets are intentionally disjoint: A-score uses application-time features, B-score uses post-origination behavioural features, and C-score uses delinquency indicators. This separation ensures each score answers a distinct business question without feature leakage across lifecycle stages.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{pptx/ABC framework - avg credit card balance over days past due.png}
+    \includegraphics[width=0.45\textwidth]{pptx/ABC framework - avg remaining installments over days past due.png}
+    \caption{Behavioural signals used in B-Score and C-Score construction. Left: Average credit card balance increases with days past due. Right: Average remaining instalment count is higher for delinquent accounts, suggesting that longer-term loans are more vulnerable.}
+    \label{fig:abc_signals}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{discussion/ABC scores AUC+top features.png}
+    \caption{A/B/C score AUC comparison and top features for each score type. The declining AUC from A to C reflects the decreasing richness of available features at each lifecycle stage.}
+    \label{fig:abc_auc_features}
+\end{figure}
+
+\section{Model Validation Diagnostics}
+\label{sec:validation_diagnostics}
+
+Model validation follows industry-standard credit scoring diagnostics that assess different aspects of model quality: discrimination (KS), calibration, and concentration (lift).
+
+\subsection{KS Statistic}
+
+The Kolmogorov-Smirnov statistic measures the maximum separation between the cumulative distribution functions of defaulters and non-defaulters. The champion model achieves a KS of 0.428, placing it firmly in the ``good'' band (0.4--0.6) as defined by industry practice. The maximum separation occurs at a prediction threshold of 0.489, which represents the point of optimal distributional divergence.
+
+\subsection{Calibration Curve}
+
+The calibration curve plots predicted probabilities against observed default rates across probability bins. The analysis reveals systematic underprediction: predicted probabilities of 0.6 correspond to observed default rates of approximately 0.15. This miscalibration is common in tree-based models with imbalanced data and does not undermine the model's ranking ability---the ordering of applicants from risky to safe remains valid. For applications requiring well-calibrated absolute probabilities (e.g., regulatory capital calculations), isotonic regression or Platt scaling can be applied as post-hoc corrections.
+
+\subsection{Lift Chart}
+
+The lift chart quantifies how much better the model performs compared to random selection in each risk decile. The champion model achieves a 3.74$\times$ lift in the top decile, meaning the riskiest 10\% of applicants (as identified by the model) are 3.74 times more likely to default than the portfolio average. This concentration of risk in the top decile enables collections and credit review teams to focus attention on a small subset of accounts for disproportionate value capture.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{pptx/KS score metrics - KS plot, calibration curve, lift chart by risk decile.png}
+    \caption{Model validation diagnostics: KS plot (left), calibration curve (centre), and lift chart by risk decile (right). The KS of 0.428 and 3.74$\times$ top-decile lift confirm strong discriminatory power.}
+    \label{fig:ks_cal_lift}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{discussion/ks + calibration + lift plots.png}
+    \caption{Extended validation diagnostics from the design discussion, showing the KS plot with threshold annotation, the calibration curve with the ideal diagonal, and the decile-level lift analysis.}
+    \label{fig:ks_cal_lift_discussion}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{discussion/our KS plot analysis.png}
+    \caption{Detailed KS plot analysis showing the cumulative distribution functions for defaulters and non-defaulters, with the maximum KS separation point annotated.}
+    \label{fig:ks_analysis}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{venky/calibration_curve_predicted_vs_actual.png}
+    \caption{Calibration curve (predicted vs actual default rate). The systematic underprediction at higher predicted probabilities is visible as the curve falls below the ideal diagonal.}
+    \label{fig:calibration_curve}
+\end{figure}
+
+\section{Expected Loss and Threshold Optimisation}
+\label{sec:expected_loss}
+
+\subsection{Expected Loss Framework}
+
+The model's probability-of-default (PD) predictions were integrated into a standard expected loss framework used in Basel II/III regulatory capital calculations:
+
+\begin{equation}
+EL = PD \times LGD \times EAD
+\label{eq:expected_loss}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item \textbf{PD (Probability of Default):} The model's predicted probability for each applicant
+    \item \textbf{LGD (Loss Given Default):} The fraction of exposure not recovered after default. In consumer lending, LGD typically ranges from 40--60\%; a value of 45\% was assumed based on industry benchmarks for unsecured consumer loans.
+    \item \textbf{EAD (Exposure at Default):} The outstanding balance at the time of default, proxied by \texttt{AMT\_CREDIT} for term loans.
+\end{itemize}
+
+Portfolio-level expected loss summaries were computed by risk band, and concentration curves were generated to identify risk clusters. The top risk decile accounts for a disproportionate share of portfolio expected loss, confirming the lift chart findings and validating the scorecard's ability to concentrate risk identification.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{notebook/home_credit_modeling_combined_16_expected_loss_estimation_el_30.png}
+    \caption{Expected loss estimation across risk deciles. The top decile accounts for a disproportionate share of total portfolio expected loss, validating the model's risk concentration ability.}
+    \label{fig:expected_loss}
+\end{figure}
+
+\subsection{Cost-Sensitive Threshold Optimisation}
+
+The default classification threshold of 0.5 is rarely optimal for credit risk applications, where the costs of different error types are highly asymmetric. The optimal threshold was determined by maximising total portfolio profit:
+
+\begin{equation}
+\text{Total Profit} = (TN \times \text{Gain}_{\text{interest}}) - (FN \times \text{Cost}_{\text{default}}) - (FP \times \text{Cost}_{\text{admin}})
+\label{eq:profit}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $TN$ (True Negatives): correctly approved good loans, each generating interest income
+    \item $FN$ (False Negatives): missed defaults that result in credit losses
+    \item $FP$ (False Positives): good applicants incorrectly rejected, incurring opportunity cost
+\end{itemize}
+
+Using the cost-ratio rule with estimated costs:
+
+\begin{equation}
+\tau^* = \frac{\text{Cost}_{FP}}{\text{Cost}_{FP} + \text{Cost}_{FN}} = \frac{500}{500 + 10{,}000} \approx 0.047
+\label{eq:threshold}
+\end{equation}
+
+This extremely conservative threshold (flagging anyone with $>4.7\%$ predicted default probability) reflects the asymmetric cost structure of consumer lending: the cost of a single default (\$10,000 in lost principal and collection costs) is 20$\times$ the cost of rejecting a good borrower (\$500 in foregone interest income). In practice, the threshold would be calibrated to the institution's specific cost structure and risk appetite.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{notebook/home_credit_modeling_combined_17_profit_curve_cost_sensitive_31.png}
+    \caption{Profit curve showing total portfolio profit as a function of the classification threshold. The optimal threshold (maximising profit) is substantially lower than the default 0.5, reflecting the asymmetric cost of missed defaults versus false rejections.}
+    \label{fig:profit_curve}
+\end{figure}
+
+\section{Reject Inference}
+\label{sec:reject_inference}
+
+A fundamental challenge in credit scoring is that models are trained only on approved applicants---rejected applicants never enter the portfolio, so their true default outcomes are unobserved. This creates a selection bias that can degrade model performance over time. Reject inference attempts to estimate what would have happened if rejected applicants had been approved.
+
+The \texttt{application\_test.csv} dataset (48,744 unlabelled applicants) was used as a proxy population of rejected or unlabelled applicants to explore two reject-inference strategies:
+
+\begin{enumerate}
+    \item \textbf{Hard cutoff / parceling:} The trained model scores each unlabelled applicant. Those above a threshold probability are labelled as defaults and added to the training set; those below are labelled as non-defaults. This approach is simple but introduces a sharp boundary that may amplify model biases.
+
+    \item \textbf{Fuzzy augmentation:} Each unlabelled applicant is added to the training set with probabilistic weights reflecting the model's confidence. An applicant with a predicted default probability of 0.3 contributes 0.3 to the default class and 0.7 to the non-default class. This approach better represents model uncertainty but requires careful weight calibration.
+\end{enumerate}
+
+This is an experimental approximation rather than a production-grade implementation, as the Kaggle test set does not contain observed outcomes for validation. The exercise demonstrates the methodology and its potential impact on model calibration. In a production setting, reject inference would be applied to actual rejected applications, ideally supplemented with a ``champion-challenger'' framework where a small fraction of marginal rejections are randomly approved to generate ground-truth labels for the rejected population.
