@@ -1,0 +1,29 @@
+%% For tips on how to write a great abstract, have a look at
+%%	-	https://www.cdc.gov/stdconference/2018/How-to-Write-an-Abstract_v4.pdf (presentation, start here)
+%%	-	https://users.ece.cmu.edu/~koopman/essays/abstract.html
+
+\begin{abstract}
+\bigskip
+\noindent
+{\textbf{Start Date}: March, 2026}
+\hfill
+{\textbf{Duration}: 1.5 months}
+\\
+{\textbf{Submission}: April, 2026}
+\bigskip \par
+\begin{center}
+\textbf{\large A fairness-aware credit risk engine for thin-file and credit-invisible borrowers.}
+\end{center}
+\par
+Traditional credit scoring relies heavily on bureau data, systematically excluding approximately 26 million Americans who are ``credit invisible'' and 19 million with ``thin files.'' This project investigates whether alternative data---including behavioural repayment patterns, digital footprint signals, and external risk scores---can improve credit default prediction for underserved borrowers while maintaining algorithmic fairness.
+
+Using the Home Credit Default Risk dataset (307,511 applicants across 7 relational tables containing 55 million+ supplementary records), we construct an end-to-end pipeline from raw data ingestion through feature engineering ($\sim$250 applicant-level features), model training, fairness assessment, and monitoring. Four model families---Logistic Regression, Random Forest, XGBoost, and LightGBM---are evaluated across four dataset variants (traditional/combined $\times$ PCA/no-PCA).
+
+Key findings include: (1) alternative behavioural data improves LightGBM AUC from 0.76 to 0.78, with the uplift most pronounced for thin-file applicants; (2) a logistic regression-based scorecard (300--850 scale) demonstrates 20$\times$ default rate differential between lowest and highest score bands; (3) an A/B/C scoring framework covers application, monitoring, and collection stages of the customer lifecycle; (4) gender bias exists in the training data rather than the algorithms, with ensemble models providing more balanced decisions across demographic groups; and (5) external source scores (\texttt{EXT\_SOURCE\_1/2/3}) are the strongest predictors, interpreted as private bureau, telco, and government credit signals respectively.
+
+The project extends beyond prediction into SHAP/LIME explainability, Fairlearn-based fairness evaluation and mitigation, PSI/CSI model monitoring, expected loss estimation, and cost-sensitive threshold optimisation---demonstrating a governance-ready credit risk modelling framework suitable for responsible lending expansion.
+\\
+\textbf{Keywords}{: Credit Risk, Default Prediction, Alternative Data, Fairness, LightGBM, XGBoost, SHAP, Fairlearn, Scorecard, WoE/IV, PCA, Financial Inclusion, Thin-File, Credit-Invisible}\\
+\textbf{Project Areas}{: Credit Risk Modelling, Feature Engineering, Exploratory Data Analysis, Machine Learning, Algorithmic Fairness, Model Explainability, Model Monitoring, Data Governance, Credit Scoring}
+
+\end{abstract}

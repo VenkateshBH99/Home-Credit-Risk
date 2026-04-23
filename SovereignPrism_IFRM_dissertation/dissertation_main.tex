@@ -1,0 +1,157 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Sovereign Prism - Home Credit Default Risk Prediction Dissertation
+%% EBA5008: Graduate Certificate in Intelligent Financial Risk Management
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\RequirePackage[l2tabu, orthodox]{nag} % tells you of any bad LaTeX usage
+                                       % must be first thing in class (with the exception of comments)
+\RequirePackage{placeins}		       % To use \FloatBarrier
+
+\documentclass[oneside]{nus}  % custom National University of Singapore project/dissertation/thesis
+\usepackage[a4paper,margin=1in,heightrounded]{geometry} %control margins explicitly
+
+%% **************** (Your) Packages (Start) ******************
+
+\usepackage{blindtext} %% for some dummy text, remove in your writeup
+
+% ---------- Listings + Code fonts ----------
+\usepackage[T1]{fontenc}
+\usepackage[scaled]{inconsolata}   % nicer monospace
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{tikz} %to draw figures
+\usetikzlibrary{arrows.meta,positioning,fit,shadows.blur,calc}
+\usepackage{adjustbox}
+\usepackage{caption}
+\usepackage[most]{tcolorbox}
+\usepackage{hyperref}
+\usepackage{float}
+
+% Biblatex setup - numeric citation style
+\usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
+
+% Bibliography files
+\addbibresource{references.bib}
+
+% Listings style
+\lstdefinestyle{finsight}{
+  basicstyle=\ttfamily\small,
+  numbers=left,
+  numbersep=8pt,
+  stepnumber=1,
+  frame=single,
+  framerule=0.4pt,
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=2,
+  showstringspaces=false,
+  captionpos=b,
+  keepspaces=true
+}
+\lstset{style=finsight}
+
+%% ***************** (Your) Packages (End) *******************
+
+
+%% **************** (Your) Data (Start) ******************
+
+\title{The Invisible Applicant:\\Illuminating the Journey from\\ Data Desert to Credit\\Worthiness}
+\tagline{A Fairness-Aware Risk Engine and Gateway for Thin-File and Credit-Invisible Borrowers}
+\author{\vspace{5 pt}Kaushik R Musuwathi (A0327229B) \\ \vspace{5 pt}Venkatesh B Honnakasturi (A0329909M) \\ \vspace{5 pt}Samarth Soni (A0329960U) \\ \vspace{5 pt}Norbert Oliver (A0328685M) \\ \vspace{5 pt}Sandesh Sreepathy Upadhyaya (A0327834X)}
+\authorID{123456M}
+\supervisor{Prof Dr Chirag Desai}
+\cosupervisor{Prof Dr }
+\department{Intelligent Financial Risk Management Graduate Certificate}
+\faculty{Institute of Systems Science}
+\degreeName{M.Tech.\ Artificial Intelligence Systems / Enterprise Business Analytics}
+\doctype{dissertation}
+\submissionDate{\DTMenglishmonthname{\the\month}, \the\year}
+
+%% ***************** (Your) Data (End) *******************
+
+%%
+\renewcommand{\chapterheadstart}{\vspace*{\beforechapskip}}
+\setlength\beforechapskip{0mm}
+
+
+%% ******** (Your) Document Settings (Start) *************
+
+% Image paths - include all chapter image dirs and the shared images dir
+\graphicspath{%
+  {./images/}%
+  {./images/pptx/}%
+  {./images/notebook/}%
+  {./images/discussion/}%
+  {./images/venky/}%
+  {./images/cover/}%
+  {./chap1/images/}%
+  {./chap2/images/}%
+  {./chap3/images/}%
+  {./chap4/images/}%
+  {./chap5/images/}%
+  {./chap6/images/}%
+  {./chap7/images/}%
+  {./chap8/images/}%
+}
+
+\makeindex
+
+\usepackage{lmodern} %latin modern
+\usepackage{graphicx}
+\usepackage{float}       % for [H] exact placement
+\usepackage{booktabs}    % nicer tables
+\usepackage{tabularx}    % auto-width tables
+\usepackage{caption}
+\usepackage{pdfpages}
+
+\captionsetup{font=small,labelfont=bf}
+\renewcommand{\arraystretch}{1.15}
+%% ********* (Your) Document Settings (End) **************
+
+
+\begin{document}
+\frontmatter
+	\maketitle
+	\input{frontmatter/copyright}
+	%\input{frontmatter/dedication}        % include a dedication.tex file
+	\input{frontmatter/acknowledgements}   % include an acknowledgements.tex file
+	\input{frontmatter/abstract}\if@openright\cleardoublepage\else\clearpage\fi
+	\tableofcontents*\if@openright\cleardoublepage\else\clearpage\fi
+	\listoffigures*\if@openright\cleardoublepage\else\clearpage\fi
+	\listoftables*\if@openright\cleardoublepage\else\clearpage\fi
+	\input{frontmatter/abbreviations}\if@openright\cleardoublepage\else\clearpage\fi
+
+%% Note: always use \input as you cannot nest \includes (amongst other things)
+\pagestyle{nuspage}
+\floatpagestyle{nuspage}
+
+\mainmatter
+	\input{chap1/introduction_main}              % Ch1: Introduction
+	\input{chap2/literature_review}              % Ch2: Literature Review & Market Research
+	\input{chap3/data_collection}                % Ch3: Data Collection and Preparation
+	\input{chap4/feature_engineering}            % Ch4: Feature Engineering and Selection
+	\input{chap5/predictive_modeling}            % Ch5: Predictive Modelling and Results
+	\input{chap6/credit_scoring}                 % Ch6: Credit Scoring and Business Application
+	\input{chap7/fairness_explainability}        % Ch7: Fairness, Explainability, and Governance
+	\input{chap8/conclusion}                     % Ch8: Conclusion and Future Work
+
+% Reference
+\if@openright\cleardoublepage\else\clearpage\fi
+\printbibliography[title=References]
+
+\appendix
+	\input{appA/appendix_a_main}                 % App A: Project Proposal
+	\input{appB/appendix_b_main}                 % App B: Mapped System Functionalities
+	\input{appC/appendix_c_main}                 % App C: Code Architecture
+	\input{appD/appendix_d_main}                 % App D: Supplementary Figures
+
+\pagestyle{nuspageback}
+
+\end{document}
+
+%%% The End %%%
