@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
-from pipelines import project_config
+from . import project_config
 
 
 # =============================================================================
