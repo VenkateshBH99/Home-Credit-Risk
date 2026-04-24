@@ -1,0 +1,75 @@
+\chapter{Code Architecture and Pipeline Documentation}
+\label{app:code_architecture}
+
+\section{Repository Structure}
+
+Primary project repository: \url{https://github.com/VenkateshBH99/Home-Credit-Risk}
+
+\begin{table}[H]
+\centering
+\caption{Repository Structure}
+\label{tab:repo_structure}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{6cm}p{8cm}}
+\toprule
+\textbf{Path} & \textbf{Role} \\
+\midrule
+\CodeCell{runner.ipynb} & Top-level orchestration notebook \\
+\CodeCell{pipelines/project_config.py} & Central configuration (paths, constants) \\
+\CodeCell{pipelines/fetch_dataset_pipeline.py} & Raw data acquisition from Google Drive \\
+\CodeCell{pipelines/aggregator_pipeline.py} & Feature engineering and split creation \\
+\CodeCell{pipelines/preprocessing_pipeline.py} & Imputation, filtering, encoding, scaling, PCA \\
+\CodeCell{src/home_credit_eda.ipynb} & Full exploratory data analysis \\
+\CodeCell{src/home_credit_modeling_combined.ipynb} & End-to-end combined-data research notebook \\
+\CodeCell{src/final_traditional.ipynb} & Application-only baseline modelling \\
+\CodeCell{src/final_traditional_pca.ipynb} & Application-only PCA variant \\
+\CodeCell{modeling_undersample_fold.ipynb} & Multi-variant benchmark with undersampling \\
+\CodeCell{pca_factor_analysis.ipynb} & Statistical interpretability (PCA, factor analysis) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Technology Stack}
+
+\begin{itemize}[nosep]
+    \item \textbf{Data processing:} pandas, numpy
+    \item \textbf{Visualisation:} matplotlib, seaborn
+    \item \textbf{Machine learning:} scikit-learn, LightGBM, XGBoost
+    \item \textbf{Explainability:} SHAP, LIME
+    \item \textbf{Fairness:} Fairlearn
+    \item \textbf{Data acquisition:} gdown (Google Drive)
+    \item \textbf{Statistical analysis:} factor\_analyzer (optional)
+\end{itemize}
+
+\section{Modular Pipeline Flow}
+
+The cleanest end-to-end workflow is:
+
+\begin{verbatim}
+runner.ipynb
+  -> fetch_dataset_pipeline.run_pipeline()
+  -> aggregator_pipeline.run_pipeline(check_existing=True)
+  -> preprocessing_pipeline.run_pipeline(check_existing=True)
+\end{verbatim}
+
+This produces four preprocessed dataset variants (traditional/combined $\times$ PCA/no-PCA), each with train/validation/test splits.
+
+\section{Dataset Variant Summary}
+
+\begin{table}[H]
+\centering
+\caption{Materialised Dataset Variants}
+\label{tab:dataset_variants_appendix}
+\begin{tabular}{llrl}
+\toprule
+\textbf{Stage} & \textbf{Variant} & \textbf{Columns} & \textbf{Notes} \\
+\midrule
+Aggregated & Traditional & 252 & Application features + derived ratios \\
+Aggregated & Combined & 337 & + supplementary + coverage flags \\
+Preprocessed & Traditional No-PCA & 187 & After variance/correlation filtering \\
+Preprocessed & Traditional PCA & 174 & PCA-reduced (90\% variance) \\
+Preprocessed & Combined No-PCA & 242 & After variance/correlation filtering \\
+Preprocessed & Combined PCA & 208 & PCA-reduced (90\% variance) \\
+\bottomrule
+\end{tabular}
+\end{table}

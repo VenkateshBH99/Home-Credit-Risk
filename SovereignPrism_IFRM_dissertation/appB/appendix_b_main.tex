@@ -1,0 +1,56 @@
+\chapter{Mapped System Functionalities}
+\label{app:mapped_functionalities}
+\thispagestyle{plain}
+\vspace*{-1cm}
+\noindent
+
+\begin{table}[H]
+\centering
+\caption{Mapping of Sovereign Prism Functionalities to Official ISS Course Modules}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{4.2cm}|p{10.9cm}|}
+\hline
+\textbf{Course Module} & \textbf{Mapped Sovereign Prism Functionalities} \\
+\hline
+\textbf{Advanced Machine Learning for Financial Services} &
+\begin{itemize}[nosep]
+  \item Comparative training of Logistic Regression, Random Forest, XGBoost, and LightGBM across traditional and combined datasets
+  \item Hyperparameter-led benchmark workflow across multiple dataset variants, including PCA and non-PCA experiments
+  \item ROC, PR, confusion-matrix, KS, lift, calibration, and champion-model comparison diagnostics
+  \item PCA, factor analysis, and varimax rotation as supporting dimensionality-reduction and interpretability experiments
+  \item Class-imbalance handling through class weighting, undersampling, and threshold tuning
+\end{itemize}
+\\
+\hline
+\textbf{Alternative Data for FinTech Innovation} &
+\begin{itemize}[nosep]
+  \item Integration of bureau, bureau balance, previous application, POS cash, credit card, and instalment-payment tables as alternative and behavioural data sources
+  \item Coverage-flag engineering to distinguish true thin-file absence from ordinary missingness
+  \item \CodeCell{EXT\_SOURCE\_1/2/3} analysis as anonymised alternative-data proxies with differing coverage and signal characteristics
+  \item Application-only versus combined-data experiments to quantify uplift from bureau and behavioural enrichment
+  \item Business framing around thin-file borrowers, credit inclusion, and financially underserved applicants
+\end{itemize}
+\\
+\hline
+\textbf{Credit Risk Modelling and Analytics} &
+\begin{itemize}[nosep]
+  \item End-to-end applicant-level aggregation from multi-table credit records into modelling-ready features
+  \item WoE/IV screening, correlation filtering, variance filtering, and scorecard-oriented feature selection
+  \item Logistic scorecard construction, 300--850 score scaling, and the A/B/C lifecycle score framework
+  \item Expected loss framing, LGD/EAD discussion, cost-sensitive threshold optimisation, and reject-inference analysis
+  \item Credit-risk validation metrics including AUC, Gini, KS, lift, calibration, score bands, and portfolio-risk interpretation
+\end{itemize}
+\\
+\hline
+\textbf{Explainable and Responsible AI for Finance} &
+\begin{itemize}[nosep]
+  \item SHAP global and local feature-attribution analysis across the major model families
+  \item LIME-based local explanations for individual credit decisions
+  \item Fairlearn-based demographic parity, equalised odds, and disparate-impact evaluation
+  \item ThresholdOptimizer mitigation, bias monitoring, and governance documentation
+  \item PSI/CSI drift monitoring together with consent, anonymisation, and right-to-erasure controls
+\end{itemize}
+\\
+\hline
+\end{tabular}
+\end{table}

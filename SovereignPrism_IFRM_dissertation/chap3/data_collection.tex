@@ -1,0 +1,469 @@
+\chapter{Data Collection and Preparation}
+\label{chap:data}
+
+\section{Dataset Overview}
+\label{sec:dataset_overview}
+
+The primary dataset is the Home Credit Default Risk competition dataset hosted on Kaggle~\cite{kaggle2018}, comprising real-world consumer lending data from Home Credit Group's operations in Southeast Asia. The dataset contains 307,511 labelled loan applications across 7 interlinked relational tables totalling over 55 million supplementary records. This scale and relational complexity make the dataset particularly suitable for investigating whether alternative behavioural data can improve credit default prediction beyond what traditional application-only variables offer.
+
+\subsection{Physical Data Model}
+
+The relational structure of the dataset is illustrated in Figure~\ref{fig:data_model}. The central entity is the application table, which connects to supplementary tables through two levels of foreign keys: \texttt{SK\_ID\_CURR} links applicants to their bureau records and previous Home Credit applications, while \texttt{SK\_ID\_BUREAU} and \texttt{SK\_ID\_PREV} link these intermediate tables to their respective granular balance and payment histories.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{discussion/Physical data model - Table_Relations_home_credit.png}{Dataset Relationship Map}{Physical Data Model showing the relational structure of the Home Credit dataset. Tables are linked through \texttt{SK\_ID\_CURR} (applicant identifier), \texttt{SK\_ID\_PREV} (previous application identifier), and \texttt{SK\_ID\_BUREAU} (bureau record identifier).}{fig:data_model}
+
+
+\subsection{Relational Linkage}
+
+The relational structure follows a hierarchical pattern with two primary branches:
+
+\begin{itemize}
+    \item \textbf{External bureau branch:} \texttt{application\_train/test} $\xrightarrow{\texttt{SK\_ID\_CURR}}$ \texttt{bureau} $\xrightarrow{\texttt{SK\_ID\_BUREAU}}$ \texttt{bureau\_balance}
+    \item \textbf{Internal behavioural branch:}
+    \begin{itemize}
+        \item \texttt{application\_train/test} $\xrightarrow{\texttt{SK\_ID\_CURR}}$ \texttt{previous\_application} $\xrightarrow{\texttt{SK\_ID\_PREV}}$ \texttt{POS\_CASH\_balance}
+        \item \texttt{application\_train/test} $\xrightarrow{\texttt{SK\_ID\_CURR}}$ \texttt{previous\_application} $\xrightarrow{\texttt{SK\_ID\_PREV}}$ \texttt{credit\_card\_balance}
+        \item \texttt{application\_train/test} $\xrightarrow{\texttt{SK\_ID\_CURR}}$ \texttt{previous\_application} $\xrightarrow{\texttt{SK\_ID\_PREV}}$ \texttt{installments\_payments}
+    \end{itemize}
+\end{itemize}
+
+This two-branch structure means that the model can draw on both external credit bureau information (how the applicant has behaved with other lenders) and internal Home Credit behavioural data (how the applicant has behaved with Home Credit's own products). The aggregation challenge---collapsing millions of monthly records into applicant-level features---is addressed in Chapter~\ref{chap:feature_engineering}.
+
+\subsection{Data Dictionary}
+
+\ProjectFigure[!htbp][width=0.9\textwidth]{pptx/data dictionary.png}{Application Data Dictionary}{Data Dictionary showing the key variables across the application table, including demographic, financial, and external score features.}{fig:data_dict}
+
+
+\section{Data Quality Analysis}
+\label{sec:data_quality}
+
+\subsection{Missing Value Analysis}
+
+The dataset exhibits substantial missingness, with 67 out of 122 features in the application table containing missing values and 49 features having more than 40\% missing data. Figure~\ref{fig:data_quality_1} summarises the main missingness bands across the application table, while Figure~\ref{fig:data_quality_2} groups representative variables by data type.
+
+\begin{figure}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\caption[Application Missingness Bands]{\textbf{Application Missingness Bands.} Native summary of the highest-missingness feature groups in the application table, transcribed from the original slide artifact for cleaner rendering and easier page fitting.}
+\label{fig:data_quality_1}
+\begin{tabular}{L{8.8cm}L{4.0cm}}
+\toprule
+\textbf{Column Group(s)} & \textbf{Missing Values \%} \\
+\midrule
+{\bfseries COMMONAREA\_MEDI, FONDKAPREMONT\_MODE, building features} & {\bfseries $\sim$70--72\%} \\
+\texttt{EXT\_SOURCE\_1} & $\sim$42\% \\
+\parbox[t]{\linewidth}{\RaggedRight\ttfamily\small OWN\_CAR\_AGE,\\ OCCUPATION\_TYPE} & $\sim$30--35\% \\
+\parbox[t]{\linewidth}{\RaggedRight\ttfamily\small AMT\_REQ\_CREDIT\_BUREAU\_*\\ features} & $\sim$13\% \\
+\texttt{EXT\_SOURCE\_2} & $\sim$0.3\% \\
+\bottomrule
+\end{tabular}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\caption[Application Feature Data Types]{\textbf{Application Feature Data Types.} Representative application-table variables grouped by measurement type, replacing the earlier screenshot so the content is searchable and stylistically consistent with the rest of the dissertation.}
+\label{fig:data_quality_2}
+\begin{tabular}{L{8.7cm}L{4.1cm}}
+\toprule
+\textbf{Column Group(s)} & \textbf{Data Type} \\
+\midrule
+\parbox[t]{\linewidth}{\RaggedRight\ttfamily\small SK\_ID\_CURR, TARGET,\\ CNT\_CHILDREN} & Discrete identifier / count variables \\
+\parbox[t]{\linewidth}{\RaggedRight\ttfamily\small AMT\_INCOME\_TOTAL, AMT\_CREDIT,\\ AMT\_ANNUITY, AMT\_GOODS\_PRICE} & Float (continuous) \\
+\parbox[t]{\linewidth}{\RaggedRight\ttfamily\small NAME\_CONTRACT\_TYPE, CODE\_GENDER,\\ NAME\_EDUCATION\_TYPE} & Categorical (nominal) \\
+\parbox[t]{\linewidth}{\RaggedRight\ttfamily\small EXT\_SOURCE\_1, EXT\_SOURCE\_2,\\ EXT\_SOURCE\_3} & Float (external scores) \\
+\parbox[t]{\linewidth}{\RaggedRight\ttfamily\small DAYS\_BIRTH, DAYS\_EMPLOYED,\\ DAYS\_REGISTRATION} & Integer (temporal, negative-day encoding) \\
+\parbox[t]{\linewidth}{\RaggedRight\ttfamily\small FLAG\_DOCUMENT\_2..21, FLAG\_OWN\_CAR,\\ FLAG\_OWN\_REALTY} & Binary flags (0/1) \\
+\bottomrule
+\end{tabular}
+\end{figure}
+
+
+Missing values are not randomly distributed but are concentrated in specific groups of variables, particularly those related to building characteristics (approximately 70\% missing), external scores, and bureau information. This non-random missingness pattern suggests that the absence of data may itself carry predictive information. For instance, the absence of external score data could indicate a lack of formal credit history, which is often associated with higher default risk among thin-file applicants.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_4_missing_values_analysis_2.png}{Missingness Pattern Overview}{Detailed missing values analysis from the EDA notebook, showing the distribution and pattern of missingness across all features.}{fig:missing_values_eda}
+
+
+The imputation strategy was tailored to each variable group:
+\begin{itemize}
+    \item \textbf{Building-related features} (approximately 70\% missing): dropped entirely to avoid introducing excessive noise.
+    \item \textbf{EXT\_SOURCE\_1} (approximately 56.4\% missing): imputed using the median, with a binary missingness indicator retained.
+    \item \textbf{Remaining numerical features}: median imputation to mitigate outlier influence.
+    \item \textbf{Categorical features}: mode imputation to maintain the most frequent class.
+\end{itemize}
+
+\subsection{DAYS\_EMPLOYED Anomaly}
+
+A notable anomaly was discovered in the \texttt{DAYS\_EMPLOYED} variable, where a sentinel value of 365,243 appears in approximately 18\% of records. This value corresponds to an unrealistic employment duration of approximately 1,000 years and likely represents missing or placeholder data inserted during the data collection process.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_days_employed_analysis_detect__13.png}{DAYS\_EMPLOYED Anomaly}{Employment duration distribution before and after anomaly treatment. The spike at 365,243 days (approximately 18\% of records) is clearly visible in the pre-treatment distribution.}{fig:days_employed_anomaly}
+
+
+Interestingly, the anomalous group exhibits a \textit{lower} default rate compared to the rest of the dataset, suggesting that the placeholder value may implicitly encode a specific applicant segment (e.g., pensioners or self-employed individuals). These values were replaced with \texttt{NaN} and a separate binary indicator (\texttt{DAYS\_EMPLOYED\_ANOMALY}) was created to preserve any predictive signal while preventing distributional distortion.
+
+\subsection{Outlier Treatment}
+
+Financial variables such as \texttt{AMT\_INCOME\_TOTAL}, \texttt{AMT\_CREDIT}, and \texttt{AMT\_ANNUITY} exhibit significant right-skew with extreme outlier values.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_8_outlier_detection_with_box_p_15.png}{Financial Outlier Boxplots}{Boxplots of key financial features showing outlier profiles. Income and credit amount variables exhibit heavy right tails.}{fig:outlier_boxplots}
+
+
+Outlier treatment was performed via winsorisation at the 1st and 99th percentiles for highly skewed financial features. While tree-based models (Random Forest, XGBoost, LightGBM) are inherently more robust to outliers due to their split-based decision rules, appropriate preprocessing reduces the impact on the logistic regression baseline and improves feature scaling consistency across all model families.
+
+\section{Exploratory Data Analysis}
+\label{sec:eda}
+
+\subsection{Target Variable Analysis}
+\label{subsec:target_analysis}
+
+The target variable represents the binary outcome of loan repayment, where 1 indicates default and 0 indicates non-default. The dataset exhibits a pronounced class imbalance with only 8.07\% of observations belonging to the default class---a ratio of approximately 1:11.4.
+
+\ProjectFigure[!htbp][width=0.38\textwidth]{pptx/quick summary stats - default vs no default donut.png}{Target Class Balance}{Target variable distribution showing 8.07\% default rate (24,825 defaults out of 307,511 applications). The 1:11.4 class ratio necessitates specialised handling during model training.}{fig:target_dist}
+
+
+This imbalance has critical implications for both modelling and evaluation. Standard accuracy metrics become unreliable, as a model can achieve 92\% accuracy simply by predicting the majority class. Consequently, evaluation metrics such as AUC-ROC, KS statistic, and recall are more appropriate, as they focus on the model's ability to distinguish between classes rather than overall correctness. From a business perspective, the imbalance reflects real-world credit portfolios where defaults are relatively rare but financially significant---a single undetected default can cost 10--50$\times$ the profit from a performing loan.
+
+The class imbalance handling strategies employed across the modelling experiments are detailed in Chapter~\ref{chap:modeling} and include class weighting (\texttt{class\_weight='balanced'} for scikit-learn models), \texttt{scale\_pos\_weight} for gradient boosting frameworks, and ensemble undersampling approaches.
+
+\subsection{Categorical Feature Analysis}
+\label{subsec:categorical_eda}
+
+Categorical variables capture important socioeconomic dimensions of credit risk. The analysis examines both the distribution of categories and their associated default rates.
+
+\subsubsection{Contract Type and Gender}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_contract_type_gender_3.png}{Contract Type by Gender}{Distribution of contract types and gender. Cash loans constitute 90.5\% of applications and carry a higher default rate than revolving loans.}{fig:contract_gender_1}
+
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_contract_type_gender_4.png}{Gender Default Rates}{Default rates by contract type and gender. Male applicants exhibit a higher default rate (10.1\%) compared to female applicants (7.0\%).}{fig:contract_gender_2}
+
+
+Cash loans constitute the overwhelming majority of applications (90.5\%) and are associated with higher default rates compared to revolving loans. Gender-based analysis reveals that male applicants have a notably higher default rate (approximately 10.1\%) than female applicants (approximately 7.0\%), a difference of over 3 percentage points. A small ``XNA'' gender category exists (4 records) representing applicants who did not disclose gender---this group is retained during modelling but flagged during fairness evaluation.
+
+\subsubsection{Education and Income Type}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_income_type_education_family_s_5.png}{Income Type Risk}{Income type distribution and associated default rates. Working-class and commercial associate applicants form the largest segments.}{fig:income_education_1}
+
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_income_type_education_family_s_6.png}{Education Level Risk}{Education level distribution and default rates. Lower education levels correspond to higher default probabilities, with ``Lower secondary'' education showing the highest default rate.}{fig:income_education_2}
+
+
+Education level is inversely related to default risk: applicants with lower secondary education exhibit the highest default rates, while those with higher education or academic degrees show the lowest. Income type analysis reveals that while ``Working'' and ``Commercial associate'' categories are the most common, ``Unemployed'' and ``Maternity leave'' categories---though small in sample size---exhibit elevated default rates.
+
+\subsubsection{Family Status and Housing}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_income_type_education_family_s_7.png}{Family Status Risk}{Family status distribution and associated default rates. Single and civil marriage applicants show higher default rates compared to married applicants.}{fig:family_status}
+
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_income_type_education_family_s_8.png}{Housing type distribution}{Housing type distribution. The majority of applicants own a house or apartment, with ``With parents'' and ``Renting'' categories showing elevated default risk.}{fig:housing_type}
+
+
+Married applicants exhibit the lowest default rates, while single applicants and those in civil marriages show elevated risk. Housing type analysis reveals that applicants living with parents or renting exhibit higher default rates than homeowners, consistent with the general pattern that stability indicators correlate with lower credit risk.
+
+\subsubsection{Occupation and Organisation Type}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_occupation_type_organization_t_9.png}{Occupation type distribution}{Occupation type distribution. Labourers form the largest segment, while certain low-frequency occupations (drivers, security staff) show elevated default rates.}{fig:occupation_type}
+
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_occupation_type_organization_t_10.png}{Organisation Type Risk}{Organisation type analysis showing default rates across employer categories. Transport, construction, and industry-type employers exhibit the highest default rates.}{fig:organisation_type}
+
+
+Occupational categories reveal meaningful disparities in risk. Labourers constitute the largest occupational segment and carry a moderately elevated default rate. Certain professions such as drivers, security staff, and low-skill labourers exhibit higher default rates, while accountants, managers, and high-skill technical staff show lower rates. Organisation type further differentiates risk, with transport, construction, and industry-type employers associated with higher default rates. However, category sample sizes vary considerably, and categories with limited observations may produce unstable estimates.
+
+\subsection{Numerical Feature Analysis}
+\label{subsec:numerical_eda}
+
+\subsubsection{Financial Variables}
+
+Financial features---income, credit amount, annuity, and goods price---show subtle but consistent distributional shifts between defaulters and non-defaulters.
+
+\ProjectFigure[!htbp][width=0.9\textwidth]{notebook/home_credit_eda_6_univariate_analysis_numerica_11.png}{Financial Distributions}{Distribution of key financial features by default status. Defaulters (orange) show slightly lower medians with wider outlier ranges, but substantial overlap between classes limits individual discriminatory power.}{fig:financial_dist}
+
+
+The overlap between classes is substantial, indicating that these variables individually lack strong discriminatory power. For example, both defaulters and non-defaulters may have similar income levels or loan amounts, making it difficult to distinguish between them using simple thresholds. This observation highlights the limitations of traditional rule-based credit scoring systems and underscores the need for models that can capture non-linear interactions between multiple variables simultaneously.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_22_default_rate_by_binned_fina_41.png}{Binned Financial Risk I}{Default rates by binned financial features, revealing non-linear risk patterns. Lower income and higher credit amounts relative to income show elevated default risk.}{fig:binned_financial_1}
+
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_22_default_rate_by_binned_fina_42.png}{Binned Financial Risk II}{Continuation of binned financial feature analysis. Credit-to-income and annuity-to-income ratios show clearer risk gradients than raw amounts.}{fig:binned_financial_2}
+
+
+\subsubsection{Age Analysis}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_age_distribution_days_birth_ye_12.png}{Age and Default Risk}{Detailed age distribution analysis. The \texttt{DAYS\_BIRTH} variable (converted to years) shows a clear inverse relationship between age and default probability.}{fig:age_distribution}
+
+
+Younger applicants tend to have significantly higher default rates, with the highest default segment being males aged 20--25 at approximately 11\%. Default risk declines monotonically with age, consistent with factors such as increasing financial stability, income consistency, and accumulated credit experience. This age-risk gradient is one of the strongest univariate predictors in the dataset, though its use must be balanced against fairness considerations to avoid age-based discrimination.
+
+\subsubsection{Bivariate Analysis}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_10_bivariate_analysis_scatter__18.png}{Scatter plots of key financial variable pairs coloured by target}{Scatter plots of key financial variable pairs coloured by target. The substantial overlap between classes confirms that default risk is not separable in any single two-dimensional projection.}{fig:bivariate_1}
+
+
+Bivariate scatter plots show significant overlap between defaulters and non-defaulters across all financial variable pairs, confirming that class separation is not achievable through linear boundaries. This reinforces the rationale for non-linear models (Random Forest, XGBoost, LightGBM) capable of capturing complex interaction effects.
+
+\subsection{External Risk Score Analysis}
+\label{subsec:ext_source_eda}
+
+The external score variables (\texttt{EXT\_SOURCE\_1}, \texttt{EXT\_SOURCE\_2}, and \texttt{EXT\_SOURCE\_3}) are identified as the most influential predictors of default risk. These three features alone account for approximately 40\% of model signal as measured by SHAP importance.
+
+\ProjectFigure[!htbp][width=0.9\textwidth]{notebook/home_credit_eda_7_external_source_features_mos_14.png}{External Scores by Default}{External Source Score distributions by default status. All three scores show clear separation between defaulters and non-defaulters, with defaulters concentrated in the lower score ranges.}{fig:ext_source_dist}
+
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{discussion/EXT SOURCE distribution analysis.png}{EXT\_SOURCE Deep Dive}{Extended analysis of EXT\_SOURCE distributions including cross-tabulation with demographic features, revealing how external scores interact with applicant characteristics.}{fig:ext_source_discussion}
+
+
+\subsubsection{Interpretation of External Scores}
+
+The external source variables are anonymised in the original dataset with no official documentation of their provenance. Through analysis of data characteristics---including missing rates, unique value counts, correlations with other features, and distributional properties---the following interpretations are offered:
+
+\begin{table}[H]
+\centering
+\caption{Interpretation of External Source Scores Based on Data Characteristics}
+\label{tab:ext_source_interp}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{L{2.9cm}L{1.7cm}L{2.0cm}L{2.4cm}L{4.8cm}}
+\toprule
+\textbf{Feature} & \textbf{Missing \%} & \textbf{Unique Values} & \textbf{Correlation with TARGET} & \textbf{Likely Interpretation} \\
+\midrule
+\CodeCell{EXT_SOURCE_1} & 56.4\% & 114K & $r = -0.155$ & Private credit bureau probabilistic score \\
+\CodeCell{EXT_SOURCE_2} & 0.2\% & 119K & $r = -0.161$ & Telco or digital footprint score \\
+\CodeCell{EXT_SOURCE_3} & 19.8\% & 814 & $r = -0.179$ & Government or public credit score band \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{itemize}
+    \item \textbf{EXT\_SOURCE\_1} (56.4\% missing, 114K unique values): Likely a \textit{private credit bureau probabilistic score}. Its high missing rate aligns with developing regions where private bureau coverage is limited. It has a strong correlation with age (\texttt{DAYS\_BIRTH}), consistent with stability-based scoring where a 65-year-old scores nearly 3$\times$ higher than a 22-year-old on average.
+
+    \item \textbf{EXT\_SOURCE\_2} (0.2\% missing, 119K unique values): Almost certainly a \textit{telco or digital footprint score}. With 98\% coverage including applicants with zero payment history, this is a near-universal signal. Defaulters show lower, flatter usage patterns while non-defaulters show higher data engagement.
+
+    \item \textbf{EXT\_SOURCE\_3} (19.8\% missing, 814 unique values): Likely a \textit{government or public credit score band}. The small number of unique values indicates a banded/bucketed scoring system. It has the strongest negative correlation with default ($r = -0.179$) and aligns well with days-past-due patterns in bureau data.
+\end{itemize}
+
+These interpretations are important because the external scores represent alternative data proxies that can extend credit assessment to thin-file borrowers. The staggered coverage pattern already visible in Table~\ref{tab:ext_source_interp} is itself informative: \texttt{EXT\_SOURCE\_1} is absent for over half the portfolio, \texttt{EXT\_SOURCE\_2} is almost universal, and \texttt{EXT\_SOURCE\_3} sits between these extremes. This differential missingness supports the interpretation that the three scores originate from distinct providers with complementary coverage rather than being interchangeable duplicates. \texttt{EXT\_SOURCE\_2}, with its near-universal coverage, is particularly valuable for applicants who lack traditional bureau records.
+
+\subsection{Correlation Analysis}
+\label{subsec:correlation_eda}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_9_correlation_analysis_16.png}{Top Target Correlations}{Top features correlated with the target variable. External source scores dominate the positive and negative correlation rankings, while traditional financial variables exhibit weak individual correlations.}{fig:correlation_analysis}
+
+
+\begin{figure}[!htbp]
+\centering
+\caption[Feature Correlation Heatmap]{Regenerated feature correlation heatmap for selected application variables. The left-right alternating row labels improve readability while preserving the main multicollinearity patterns among \texttt{AMT\_CREDIT}, \texttt{AMT\_GOODS\_PRICE}, and \texttt{AMT\_ANNUITY}.}
+\label{fig:correlation_heatmap}
+\setlength{\tabcolsep}{2.8pt}
+\renewcommand{\arraystretch}{1.1}
+\scriptsize
+\begin{tabular}{lcccccccccc l}
+\toprule
+& \rotatebox{60}{TARGET} & \rotatebox{60}{EXT\_1} & \rotatebox{60}{EXT\_2} & \rotatebox{60}{EXT\_3} & \rotatebox{60}{CREDIT} & \rotatebox{60}{GOODS} & \rotatebox{60}{ANNUITY} & \rotatebox{60}{INCOME} & \rotatebox{60}{AGE} & \rotatebox{60}{EMPLOY} & \\
+\midrule
+TARGET & \CorrCell{1.000} & \CorrCell{-0.155} & \CorrCell{-0.160} & \CorrCell{-0.179} & \CorrCell{-0.030} & \CorrCell{-0.040} & \CorrCell{-0.013} & \CorrCell{-0.004} & \CorrCell{0.078} & \CorrCell{-0.045} & \\
+ & \CorrCell{-0.155} & \CorrCell{1.000} & \CorrCell{0.214} & \CorrCell{0.187} & \CorrCell{0.168} & \CorrCell{0.176} & \CorrCell{0.119} & \CorrCell{0.026} & \CorrCell{-0.601} & \CorrCell{0.290} & EXT\_SOURCE\_1 \\
+EXT\_SOURCE\_2 & \CorrCell{-0.160} & \CorrCell{0.214} & \CorrCell{1.000} & \CorrCell{0.109} & \CorrCell{0.131} & \CorrCell{0.139} & \CorrCell{0.126} & \CorrCell{0.061} & \CorrCell{-0.092} & \CorrCell{-0.021} & \\
+ & \CorrCell{-0.179} & \CorrCell{0.187} & \CorrCell{0.109} & \CorrCell{1.000} & \CorrCell{0.044} & \CorrCell{0.048} & \CorrCell{0.031} & \CorrCell{-0.030} & \CorrCell{-0.205} & \CorrCell{0.113} & EXT\_SOURCE\_3 \\
+AMT\_CREDIT & \CorrCell{-0.030} & \CorrCell{0.168} & \CorrCell{0.131} & \CorrCell{0.044} & \CorrCell{1.000} & \CorrCell{0.987} & \CorrCell{0.770} & \CorrCell{0.157} & \CorrCell{-0.055} & \CorrCell{-0.067} & \\
+ & \CorrCell{-0.040} & \CorrCell{0.176} & \CorrCell{0.139} & \CorrCell{0.048} & \CorrCell{0.987} & \CorrCell{1.000} & \CorrCell{0.775} & \CorrCell{0.160} & \CorrCell{-0.053} & \CorrCell{-0.065} & AMT\_GOODS\_PRICE \\
+AMT\_ANNUITY & \CorrCell{-0.013} & \CorrCell{0.119} & \CorrCell{0.126} & \CorrCell{0.031} & \CorrCell{0.770} & \CorrCell{0.775} & \CorrCell{1.000} & \CorrCell{0.192} & \CorrCell{0.009} & \CorrCell{-0.104} & \\
+ & \CorrCell{-0.004} & \CorrCell{0.026} & \CorrCell{0.061} & \CorrCell{-0.030} & \CorrCell{0.157} & \CorrCell{0.160} & \CorrCell{0.192} & \CorrCell{1.000} & \CorrCell{0.027} & \CorrCell{-0.064} & AMT\_INCOME\_TOTAL \\
+DAYS\_BIRTH & \CorrCell{0.078} & \CorrCell{-0.601} & \CorrCell{-0.092} & \CorrCell{-0.205} & \CorrCell{-0.055} & \CorrCell{-0.053} & \CorrCell{0.009} & \CorrCell{0.027} & \CorrCell{1.000} & \CorrCell{-0.616} & \\
+ & \CorrCell{-0.045} & \CorrCell{0.290} & \CorrCell{-0.021} & \CorrCell{0.113} & \CorrCell{-0.067} & \CorrCell{-0.065} & \CorrCell{-0.104} & \CorrCell{-0.064} & \CorrCell{-0.616} & \CorrCell{1.000} & DAYS\_EMPLOYED \\
+\bottomrule
+\end{tabular}
+\end{figure}
+
+
+The correlation analysis yields several important findings:
+\begin{enumerate}
+    \item External score variables exhibit the strongest correlations with default (all negative, $|r| = 0.155\text{--}0.179$).
+    \item Traditional financial variables have weak individual correlations ($|r| < 0.05$), confirming that univariate financial analysis is insufficient for reliable default prediction.
+    \item Multicollinearity exists among financial features: \texttt{AMT\_CREDIT} and \texttt{AMT\_GOODS\_PRICE} ($r = 0.987$), and \texttt{AMT\_CREDIT} and \texttt{AMT\_ANNUITY} ($r = 0.770$). This multicollinearity is addressed during feature selection through VIF-based filtering (Chapter~\ref{chap:feature_engineering}).
+    \item The raw \texttt{DAYS\_BIRTH} variable shows a positive correlation with default ($r = 0.078$) because larger values correspond to younger applicants; once converted to age in years, the relationship is the expected inverse age-risk gradient observed in the univariate analysis.
+\end{enumerate}
+
+\FloatBarrier
+
+\subsection{Bureau Data Analysis (External)}
+\label{subsec:bureau_eda}
+
+The bureau dataset contains 1.72 million records from external credit institutions, covering 85.7\% of applicants. This external perspective is critical for understanding an applicant's broader credit behaviour beyond their Home Credit relationship.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{pptx/external data analysis - number of bureau credits per applicant.png}{Bureau Credits per Applicant}{Distribution of number of bureau credits per applicant. The mean is approximately 8 credits per applicant, with a heavy right tail extending to 300+.}{fig:bureau_credits_per_applicant}
+
+\ProjectFigure[!htbp][width=0.82\textwidth]{venky/pca_component_variance_ratio.png}{Bureau Credit Amount Distribution}{Bureau credit amount distribution clipped at the 99th percentile. The \texttt{AMT\_CREDIT\_SUM} histogram is heavily right-skewed, confirming that a small minority of bureau lines account for disproportionately large external exposure.}{fig:bureau_credit_amount_distribution}
+
+
+Key findings from the bureau data analysis:
+\begin{itemize}
+    \item The mean number of bureau credits per applicant is approximately 8, with a maximum exceeding 300, indicating significant variation in credit exposure.
+    \item Most credits are classified as ``Closed'' or ``Active'' with low delinquency. Days past due (DPD $> 0$) occurs in only a small fraction of records.
+    \item Consumer loans are the most common credit type, followed by credit cards and car loans.
+    \item Bureau credit behaviour provides orthogonal predictive signal to application-level data, capturing cross-institutional debt exposure and historical repayment patterns.
+\end{itemize}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_bureau_credit_active_status_di_21.png}{Bureau Credit Status}{Detailed bureau credit status distribution from the EDA notebook. The breakdown by credit status reveals the predominance of closed and active credits.}{fig:bureau_detailed_1}
+
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_17_bureau_balance_analysis_36.png}{Bureau Status Over Time}{Bureau balance monthly status analysis. The temporal composition of bureau balance statuses shows that on-time and closed states dominate throughout the observation window, while delinquent states remain a small minority.}{fig:bureau_balance_1}
+
+
+\subsection{Previous Application Analysis}
+\label{subsec:prev_app_eda}
+
+The previous application dataset contains 1.67 million records covering 94.6\% of applicants, capturing historical borrowing patterns within Home Credit's own product ecosystem.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{venky/shap_summary_plot_risk_drivers.png}{Previous Contract Mix}{Previous application contract status by contract type. Consumer loans are overwhelmingly approved, while cash and revolving loans show a more mixed pattern across cancelled, refused, and unused-offer outcomes.}{fig:prev_app_contract_mix}
+
+
+Key findings include:
+\begin{itemize}
+    \item Approximately 87\% of previous applications were approved, with the remainder either refused, cancelled, or left unused.
+    \item The top goods categories include consumer goods, mobile phones, and electronics---products typical of point-of-sale financing.
+    \item The mean number of prior applications per client is 5--6, indicating that most applicants are repeat customers.
+    \item Prior application behaviour provides orthogonal predictive signal beyond current application data, particularly the ratio of approved versus refused applications and the gap between requested and actual credit amounts.
+\end{itemize}
+
+\subsection{Internal Behavioural Data Analysis}
+\label{subsec:behavioural_eda}
+
+Internal behavioural tables capture how borrowers actually repay loans after origination, providing a dynamic picture of repayment discipline, utilisation, and timing. Together, these three tables produce 85 applicant-level features after aggregation that, when combined with application data, improve prediction accuracy by approximately 3.1\%.
+
+\subsubsection{POS Cash Balance}
+
+The POS Cash Balance table contains approximately 10 million records covering 94.1\% of applicants, tracking monthly instalment behaviour on point-of-sale and cash loans.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_13_pos_cash_balance_analysis_29.png}{Remaining Installments Over Time}{Detailed POS Cash Balance analysis showing average remaining instalments over time. The curve peaks mid-lifecycle and then declines as accounts mature toward closure.}{fig:pos_cash_detailed}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{venky/calibration_curve_predicted_vs_actual.png}{POS Contract Status and DPD}{POS Cash Balance contract-status distribution and days-past-due profile by \texttt{NAME\_CONTRACT\_STATUS}. Completed and active states dominate the portfolio, while delinquent observations remain concentrated in a thin tail of overdue cases.}{fig:pos_cash_status_dpd}
+
+
+The analysis found that nearly all payments were on time, with overdue cases comprising only 0.3\% of records. This suggests that POS repayment histories are mostly stable, but when aggregated they still provide meaningful variation across borrowers that contributes to risk differentiation.
+
+\subsubsection{Credit Card Balance}
+
+The Credit Card Balance table contains approximately 3.84 million records but covers only 28.3\% of applicants, making it the most selective of the behavioural tables.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_14_credit_card_balance_analysi_31.png}{Credit Card Balance Over Time}{Detailed credit card balance analysis showing average card balance over time. The balance trough around month -40 and the sharp rise toward the most recent months suggest changing utilisation behaviour as accounts mature.}{fig:credit_card_detailed}
+
+
+Despite its lower coverage, the credit card data contributes useful information on card utilisation and repayment behaviour. Utilisation ratios average 30--50\%, and overdue cases are rare at approximately 0.2\%. The limited coverage means that missingness in credit card features carries implicit information about the applicant's product usage profile.
+
+\subsubsection{Installments Payments}
+
+The Installments Payments table contains approximately 13.6 million records covering 94.8\% of applicants, recording each individual loan repayment event.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_15_installments_payments_analy_33.png}{Payment Delay by Version}{Detailed instalment payment analysis showing average payment delay by instalment version. Borrowers tend to pay several days early on average, although the early-payment advantage narrows slightly across later instalment versions.}{fig:installments_detailed}
+
+
+Approximately 5--10\% of payments are late, with an average delay of 5--10 days. These late-payment patterns are more directly linked to repayment reliability than the POS or credit card data and therefore represent the most valuable behavioural indicators for risk modelling. Engineered features from this table include late-payment ratios, average delay days, payment-to-instalment discrepancies, and monthly delinquency frequency.
+
+\subsubsection{Combined Behavioural Uplift}
+
+\ProjectFigure*[!htbp][width=0.85\textwidth]{pptx/quick summary stats - predictive power by data source.png}{Predictive Signal Contribution}{Predictive power contribution by data source. Application data provides the baseline, while bureau and behavioural tables each contribute incremental predictive signal, totalling approximately 3.1\% AUC uplift.}{fig:predictive_power}
+
+
+After aggregation, the three internal behavioural tables produce 85 applicant-level features. When combined with application and bureau data, these features boost prediction AUC by approximately 3.1 percentage points compared to application-only models. This uplift quantifies the business case for integrating alternative behavioural data into credit scoring systems and is discussed further in Chapter~\ref{chap:modeling}.
+
+\FloatBarrier
+
+\subsection{Additional EDA}
+\label{subsec:additional_eda}
+
+\subsubsection{Flag Document Analysis}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_18_flag_document_analysis_37.png}{Document Flag Patterns}{Flag document analysis showing the distribution of document provision flags and their association with default risk. Applicants who provide fewer documents tend to have slightly elevated default rates.}{fig:flag_documents}
+
+
+The application table contains approximately 20 binary flag variables indicating whether applicants provided specific documents (e.g., identity, income verification, property documents). Applicants who provide fewer documents tend to exhibit slightly elevated default rates, suggesting that documentation completeness is a weak but informative proxy for applicant engagement and creditworthiness.
+
+\subsubsection{Temporal Features}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_19_other_temporal_features_day_38.png}{Temporal Feature Patterns}{Temporal feature analysis including \texttt{DAYS\_REGISTRATION}, \texttt{DAYS\_ID\_PUBLISH}, and related variables. These features capture the recency of identity document issuance and registration events.}{fig:temporal_features}
+
+
+Temporal features such as \texttt{DAYS\_REGISTRATION} (days since registration at current residence), \texttt{DAYS\_ID\_PUBLISH} (days since ID document was issued), and \texttt{DAYS\_LAST\_PHONE\_CHANGE} (days since last phone number change) capture stability signals. More recent changes in these variables tend to correlate weakly with higher default risk, consistent with the general pattern that residential and identity stability are protective factors.
+
+\subsubsection{Credit Bureau Inquiry Features}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_20_credit_bureau_inquiry_featu_39.png}{Bureau Inquiry Activity}{Credit bureau inquiry features showing the distribution of recent inquiries across applicants. A higher number of recent bureau inquiries is weakly associated with elevated default risk.}{fig:bureau_inquiry}
+
+
+Bureau inquiry variables (\texttt{AMT\_REQ\_CREDIT\_BUREAU\_*}) record the number of credit bureau inquiries made in different time windows (hour, day, week, month, quarter, year). A higher number of recent inquiries is weakly associated with elevated default risk, consistent with the credit scoring principle that excessive credit-seeking behaviour signals financial stress.
+
+\subsubsection{Binary Flag Features}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_21_binary_flag_features_owners_40.png}{Binary Ownership Flags}{Binary flag feature analysis including car ownership, property ownership, and various contact availability flags. Property and car ownership show weak but consistent negative associations with default.}{fig:binary_flags}
+
+
+Binary flag features including car ownership, property ownership, and contact availability indicators provide weak but consistent signals. Property and car ownership are negatively associated with default risk, while the absence of contact information (e.g., work phone, email) shows a slight positive association, suggesting that limited contactability may correlate with higher risk.
+
+\subsubsection{Feature Distribution and Skewness}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_eda_16_feature_distribution_skewne_34.png}{Feature distribution and skewness analysis}{Feature distribution and skewness analysis. Many financial features exhibit high positive skewness, necessitating log transformation or winsorisation for linear model compatibility.}{fig:skewness}
+
+
+Many financial features exhibit high positive skewness, with income and credit amount variables showing particularly heavy right tails. This skewness affects linear models more than tree-based models and motivated the winsorisation preprocessing step described in Section~\ref{sec:data_quality}. The skewness analysis also informed the decision to apply log transformations to selected features during the PCA variant of the modelling pipeline.
+
+\section{Data Preprocessing Pipeline}
+\label{sec:preprocessing}
+
+The preprocessing pipeline was implemented as a modular Python module (\texttt{pipelines/preprocessing\_pipeline.py}) that enforces strict anti-leakage protocols and produces four downstream-ready dataset variants.
+
+\subsection{Imputation Strategy}
+
+\begin{itemize}
+    \item \textbf{Numerical features:} Median imputation, fitted on the training split only, to mitigate the impact of outliers while preserving distributional central tendency.
+    \item \textbf{Categorical features:} Mode imputation to maintain the most frequent class. Unseen categories in validation/test splits are mapped to a fallback value.
+    \item \textbf{High-missingness features:} Columns with more than 70\% missing values were removed entirely to avoid introducing excessive noise.
+    \item \textbf{Missingness indicators:} Binary flags were retained for features where missingness carries potential predictive information (e.g., \texttt{EXT\_SOURCE\_1}).
+\end{itemize}
+
+\subsection{Feature Encoding}
+
+Categorical features were encoded using two strategies depending on the modelling context:
+\begin{itemize}
+    \item \textbf{One-hot encoding:} Applied to application-level categorical features using \texttt{pd.get\_dummies}, expanding the feature space to capture all category levels explicitly.
+    \item \textbf{Label encoding:} Applied to remaining categorical features in the combined dataset with unseen-value fallback, providing a compact representation suitable for tree-based models.
+\end{itemize}
+
+All numerical features were scaled using \texttt{StandardScaler} (zero mean, unit variance), fitted on the training split only.
+
+\subsection{Anti-Leakage Design}
+
+The modular pipeline enforces a strict anti-leakage protocol:
+\begin{enumerate}
+    \item \textbf{Split-first:} Train/validation/test splits (70\%/15\%/15\%) are created before any preprocessing transformations.
+    \item \textbf{Fit-on-train:} All imputers, scalers, encoders, and PCA objects are fitted exclusively on the training split.
+    \item \textbf{Transform-all:} Fitted transformers are applied identically to validation and test splits without refitting.
+\end{enumerate}
+
+This design prevents information from future data influencing model training, a critical requirement for honest model evaluation and a common source of inflated performance in credit scoring research.
+
+\subsection{Dataset Variants}
+
+The preprocessing pipeline produces four dataset variants for downstream modelling:
+
+\begin{table}[H]
+\centering
+\caption{Four Dataset Variants Produced by the Preprocessing Pipeline}
+\label{tab:dataset_variants}
+\begin{tabular}{llp{7cm}}
+\toprule
+\textbf{Variant} & \textbf{Features} & \textbf{Description} \\
+\midrule
+Traditional (no PCA) & $\sim$228 & Application-only features with one-hot encoding \\
+Traditional (PCA) & $\sim$50 & Application-only with PCA on continuous features \\
+Combined (no PCA) & $\sim$205 & Application + all supplementary table aggregations \\
+Combined (PCA) & $\sim$50 & Combined features with PCA dimensionality reduction \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These four variants enable a controlled comparison of: (a) traditional versus alternative data value, and (b) full-feature versus PCA-reduced model performance. Results across all variants are presented in Chapter~\ref{chap:modeling}.

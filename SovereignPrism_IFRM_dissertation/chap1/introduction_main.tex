@@ -1,0 +1,159 @@
+\chapter{Introduction}
+\label{chap:introduction}
+
+\section{Background and Motivation}
+\label{sec:background}
+
+Traditional credit scoring relies heavily on bureau data from agencies such as TransUnion, Equifax, and Experian. While effective for consumers with established credit histories, this approach systematically excludes approximately 26 million Americans who are ``credit invisible'' and 19 million more with ``thin files''---groups that disproportionately include minority communities, younger consumers, and recent immigrants~\cite{cfpb2022}.
+
+Non-traditional data sources---including digital footprints, phone usage patterns, social network risk signals, identity verification depth, and external scores---offer the potential to score previously unscorable consumers. However, their adoption raises critical questions about algorithmic fairness and model interpretability.
+
+This project investigates whether alternative data features can improve credit default prediction accuracy---particularly for thin-file applicants---while maintaining algorithmic fairness across gender and socioeconomic groups. The aim is to design and develop a risk modelling tool for the home credit sector.
+
+\section{Business Problem Statement}
+\label{sec:business_problem}
+
+Home Credit serves unbanked and underbanked populations with limited credit history. The challenge is to predict loan default using alternative behavioural data instead of traditional bureau files. The business goal is to expand financial inclusion while maintaining robust credit risk management.
+
+Home Credit specifically serves customers with little or no credit history---people who are typically turned away by traditional banks. The goal is to give everyone a fair chance to access financing through simple, fast, and accessible loans, both online and in-store. Responsible lending is at the core: carefully assessing each customer's ability to repay so they are not put into financial difficulty. This is exactly where a risk scoring system like the one developed in this project plays a critical role.
+
+With a plan to operate across four Southeast Asian countries, the company partners with banks, credit agencies, and regulators to open up the borrower pool. The longer vision is to make credit available wherever customers already shop---enabling e-commerce platforms and retailers to offer financing at the point of purchase.
+
+\section{Business Objectives}
+\label{sec:business_objectives}
+
+The project's business objectives are distinct from its technical objectives, reflecting the stakeholder-facing goals that the modelling framework is designed to serve:
+
+\begin{enumerate}
+    \item \textbf{Expand credit access to thin-file borrowers:} Reliably rank 60--80\% of applicants who would otherwise go unassessed by traditional bureau-based scoring.
+    \item \textbf{Maintain portfolio quality:} Achieve a 2--5\% default reduction through the A/B/C scoring framework integrated into the loan approval workflow.
+    \item \textbf{Deliver stakeholder value:} Provide banking partners with smarter investment decisions and improved \ac{LTV}:\ac{CAC} ratios; help credit bureau companies generate more fee-based recurring revenue through better scores; and give regulators privacy-by-default, consent-based, auditable model predictions.
+    \item \textbf{Ensure compliance and fairness:} Maintain disparate impact ratios $\geq 0.80$ and equalised odds differences $< 0.05$ so that lending decisions remain explainable and compliant across gender and socioeconomic groups.
+\end{enumerate}
+
+\section{Technical Objectives}
+\label{sec:technical_objectives}
+
+The technical objectives define the measurable engineering and analytical goals:
+
+\begin{enumerate}
+    \item \textbf{Build and evaluate multiple model families:} Train Logistic Regression, Random Forest, XGBoost, and LightGBM on approximately 205 features from all 8 tables.
+    \item \textbf{Achieve AUC $> 0.75$ on test data} and quantify the uplift from adding supplementary behavioural data to application-only models.
+    \item \textbf{Engineer features from 8 interlinked tables} covering 307,511 applicants across 3 modelling pipelines (Application-Only, Combined, PCA-reduced).
+    \item \textbf{Provide an interpretable credit scoring framework} (A/B/C scores) that supports real-world lending decisions and reduces default risk.
+    \item \textbf{Conduct fairness evaluation} using Fairlearn MetricFrame on gender, age, and income groups, with bias mitigation via ThresholdOptimizer.
+    \item \textbf{Complete all EDA, feature engineering, modelling, and reporting} within the project timeframe.
+\end{enumerate}
+
+\section{Project Scope}
+\label{sec:project_scope}
+
+\subsection{Data Scope}
+
+The primary dataset is the Home Credit Default Risk competition dataset from Kaggle, comprising real-world consumer lending data with 7 relational tables linked by applicant and previous application identifiers. The dataset contains over 55 million supplementary records across bureau, payment, and balance tables.
+
+\begin{table}[H]
+\centering
+\caption{Dataset Structure Overview}
+\label{tab:dataset_overview}
+\begin{tabular}{llrl}
+\toprule
+\textbf{Table} & \textbf{Rows} & \textbf{Columns} & \textbf{Content} \\
+\midrule
+application\_train & 307,511 & 122 & Demographics, loan terms, TARGET \\
+application\_test & 48,744 & 121 & Holdout evaluation set \\
+bureau & 1,716,428 & 17 & External credit bureau records \\
+bureau\_balance & 27,299,925 & 3 & Monthly bureau status history \\
+previous\_application & 1,670,214 & 37 & Prior Home Credit applications \\
+POS\_CASH\_balance & 10,001,358 & 8 & POS/cash loan balances \\
+credit\_card\_balance & 3,840,312 & 23 & Credit card account snapshots \\
+installments\_payments & 13,605,401 & 8 & Instalment payment records \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Methodology Scope}
+
+The project constructs an end-to-end pipeline from raw data ingestion through feature engineering ($\sim$250 applicant-level features), model training, fairness assessment, and monitoring. LightGBM serves as the primary model with XGBoost, Random Forest, and Logistic Regression as comparators, evaluated across four controlled dataset variants: traditional-only, combined, traditional-PCA, and combined-PCA.
+
+\begin{table}[H]
+\centering
+\caption{End-to-End Pipeline Stages}
+\label{tab:pipeline_stages}
+\begin{tabular}{p{3.5cm}p{5cm}p{4cm}}
+\toprule
+\textbf{Stage} & \textbf{Component} & \textbf{Output} \\
+\midrule
+Data Ingestion & Load 7 relational CSVs; apply exclusions & Clean training set \\
+Feature Engineering & Aggregate supplementary tables to applicant level & Feature matrix ($\sim$250 features) \\
+Feature Selection & WoE/IV scoring; VIF multicollinearity check & Final feature set (70 variables) \\
+Model Training & LightGBM, XGBoost, RF, LR; stratified 5-fold CV & Trained model variants \\
+Fairness Evaluation & Fairlearn MetricFrame on gender, age, income & Fairness metrics per group \\
+Explainability & SHAP TreeExplainer; LIME local explanations & Feature importance, reason codes \\
+Model Monitoring & PSI, AUC stability, Gini drift & Monitoring dashboard metrics \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\ProjectFigure*[H][width=0.95\textwidth]{pptx/model architecture.png}{Model Architecture}{Overall model architecture showing the flow from raw data sources through feature engineering, model training, and evaluation.}{fig:model_architecture}
+
+\FloatBarrier
+
+
+\subsection{Out of Scope}
+
+The following are explicitly out of scope for this project: real-time production deployment, neural network architectures, real-time model serving infrastructure, and integration with live banking systems. The project focuses on research-grade model development, evaluation, and governance.
+
+\section{Stakeholder Analysis}
+\label{sec:stakeholders}
+
+Three primary stakeholder groups are identified:
+
+\begin{enumerate}
+    \item \textbf{Banking \& Financial Partners:} Concerned with profitability, customer trust, and data privacy. The project helps them make smarter investments with marginal customer acquisition cost, directly improving LTV:CAC ratios.
+    \item \textbf{Credit Bureau Companies:} Concerned with ROI, integration complexity, and strategic fit. The project helps them provide better credit scores to more people and generate more fee-based recurring revenue.
+    \item \textbf{Regulators \& Governments:} Concerned with risk exposure, data governance, and model fairness. The project uses a privacy-by-default architecture where all data usage is consent-based and model predictions are auditable.
+\end{enumerate}
+
+\begin{center}
+\begin{minipage}[t]{0.315\textwidth}
+\centering
+\begingroup
+\setlength{\fboxsep}{\SPFigureFrameSep}%
+\setlength{\fboxrule}{2.4pt}%
+\fcolorbox{black}{white}{\adjustimage{max totalsize={0.87\linewidth}{0.162\textheight},center}{pptx/stakeholders-banking and financial partners.png}}%
+\endgroup
+\captionof{figure}[Banking Stakeholders]{Banking \& Financial Partners -- key concerns include profitability, customer trust, and data privacy.}
+\label{fig:stakeholders_banking}
+\end{minipage}\hfill%
+\begin{minipage}[t]{0.315\textwidth}
+\centering
+\adjustimage{max totalsize={0.87\linewidth}{0.162\textheight},center}{pptx/stakeholders - credit bureau companies.png}
+\captionof{figure}[Bureau Stakeholders]{Credit Bureau Companies -- key concerns include \ac{ROI}, integration complexity, and strategic fit.}
+\label{fig:stakeholders_bureau}
+\end{minipage}\hfill%
+\begin{minipage}[t]{0.315\textwidth}
+\centering
+\adjustimage{max totalsize={0.87\linewidth}{0.162\textheight},center}{pptx/stakeholders - regulators.png}
+\captionof{figure}[Regulatory Stakeholders]{Regulators \& Governments -- key concerns include risk exposure, data governance, and model fairness.}
+\label{fig:stakeholders_regulators}
+\end{minipage}
+\end{center}
+
+\FloatBarrier
+
+
+\section{Report Organisation}
+\label{sec:report_organisation}
+
+The remainder of this dissertation is organised as follows:
+
+\begin{itemize}
+    \item \textbf{Chapter~\ref{chap:litreview}} reviews the literature on traditional and alternative credit scoring, machine learning for credit risk, evaluation metrics, algorithmic fairness, and model interpretability.
+    \item \textbf{Chapter~\ref{chap:data}} describes the dataset, data quality analysis, exploratory data analysis, and preprocessing pipeline.
+    \item \textbf{Chapter~\ref{chap:feature_engineering}} details the feature engineering and selection methodology, including the traditional versus alternative data strategy.
+    \item \textbf{Chapter~\ref{chap:modeling}} presents the predictive modelling experiments and results across all dataset variants and model families.
+    \item \textbf{Chapter~\ref{chap:scoring}} describes the credit scoring system, A/B/C framework, validation diagnostics, expected loss estimation, and reject inference.
+    \item \textbf{Chapter~\ref{chap:fairness}} covers SHAP/LIME explainability, fairness evaluation and mitigation, model monitoring, and governance.
+    \item \textbf{Chapter~\ref{chap:conclusion}} concludes with findings, limitations, stakeholder recommendations, and future work.
+\end{itemize}

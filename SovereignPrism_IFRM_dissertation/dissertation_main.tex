@@ -1,0 +1,281 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Sovereign Prism - Home Credit Default Risk Prediction Dissertation
+%% EBA5008: Graduate Certificate in Intelligent Financial Risk Management
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\RequirePackage[l2tabu, orthodox]{nag} % tells you of any bad LaTeX usage
+                                       % must be first thing in class (with the exception of comments)
+\RequirePackage{placeins}		       % To use \FloatBarrier
+
+\documentclass[oneside]{nus}  % custom National University of Singapore project/dissertation/thesis
+\usepackage[
+  a4paper,
+  left=0.4in,
+  right=0.4in,
+  top=0.48in,
+  bottom=0.42in,
+  includeheadfoot,
+  headsep=6pt,
+  footskip=12pt,
+  heightrounded
+]{geometry}
+
+%% **************** (Your) Packages (Start) ******************
+
+% ---------- Listings + Code fonts ----------
+\usepackage[T1]{fontenc}
+\usepackage[scaled]{inconsolata}   % nicer monospace
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage{tikz} %to draw figures
+\usetikzlibrary{arrows.meta,positioning,fit,shadows.blur,calc}
+\usepackage{adjustbox}
+\usepackage{caption}
+\usepackage[most]{tcolorbox}
+\usepackage{float}
+\usepackage{xparse}
+\usepackage{ragged2e}
+\usepackage{etoolbox}
+\definecolor{MidnightBlue}{RGB}{25,25,112}
+\definecolor{DarkGreen}{RGB}{0,100,0}
+\definecolor{RoyalBlue}{RGB}{65,105,225}
+
+% Biblatex setup - numeric citation style
+\usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
+
+% Bibliography files
+\addbibresource{references.bib}
+
+% Listings style
+\lstdefinestyle{finsight}{
+  basicstyle=\ttfamily\small,
+  numbers=left,
+  numbersep=8pt,
+  stepnumber=1,
+  frame=single,
+  framerule=0.4pt,
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=2,
+  showstringspaces=false,
+  captionpos=b,
+  keepspaces=true
+}
+\lstset{style=finsight}
+
+%% ***************** (Your) Packages (End) *******************
+
+
+%% **************** (Your) Data (Start) ******************
+
+\title{The Invisible Applicant:\\Illuminating the Journey from\\ Data Desert to Credit\\Worthiness}
+\tagline{A Fairness-Aware Risk Engine and Gateway for Thin-File and Credit-Invisible Borrowers}
+\author{\vspace{5 pt}Kaushik R Musuwathi (A0327229B) \\ \vspace{5 pt}Venkatesh B Honnakasturi (A0329909M) \\ \vspace{5 pt}Samarth Soni (A0329960U) \\ \vspace{5 pt}Norbert Oliver (A0328685M) \\ \vspace{5 pt}Sandesh Sreepathy Upadhyaya (A0327834X)}
+\authorID{123456M}
+\supervisor{Prof Dr Chirag Desai}
+\cosupervisor{Prof Dr }
+\department{Intelligent Financial Risk Management Graduate Certificate}
+\faculty{Institute of Systems Science}
+\degreeName{M.Tech.\ Artificial Intelligence Systems / Enterprise Business Analytics}
+\doctype{dissertation}
+\submissionDate{\DTMenglishmonthname{\the\month}, \the\year}
+
+%% ***************** (Your) Data (End) *******************
+
+%%
+\renewcommand{\chapterheadstart}{\vspace*{\beforechapskip}}
+\setlength\beforechapskip{0mm}
+
+
+%% ******** (Your) Document Settings (Start) *************
+
+% Image paths - include all chapter image dirs and the shared images dir
+\graphicspath{%
+  {./images/}%
+  {./images/pptx/}%
+  {./images/notebook/}%
+  {./images/discussion/}%
+  {./images/venky/}%
+  {./images/cover/}%
+  {./chap1/images/}%
+  {./chap2/images/}%
+  {./chap3/images/}%
+  {./chap4/images/}%
+  {./chap5/images/}%
+  {./chap6/images/}%
+  {./chap7/images/}%
+  {./chap8/images/}%
+}
+
+\makeindex
+
+\usepackage{lmodern} %latin modern
+\usepackage{graphicx}
+\usepackage{booktabs}    % nicer tables
+\usepackage{tabularx}    % auto-width tables
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{pdfpages}
+
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+
+\captionsetup{font=small,labelfont=bf}
+\captionsetup[figure]{font=small,labelfont=bf,textfont=bf}
+\captionsetup[table]{font=small,labelfont=bf}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\headsep}{6pt}
+\setlength{\footskip}{12pt}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\captionsetup{skip=6pt}
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.8}
+\setcounter{topnumber}{4}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{6}
+\urlstyle{same}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=MidnightBlue,
+  citecolor=DarkGreen,
+  urlcolor=RoyalBlue,
+  pdfborder={0 0 0}
+}
+
+\newcommand{\SPFigureHeight}{0.72\textheight}
+\newcommand{\SPGlobalImageScale}{0.9}
+\newcommand{\SPFigureFrameSep}{0.8pt}
+\newcommand{\SPTableFrameSep}{3pt}
+\newsavebox{\SPTableBox}
+
+\newcommand{\CodeCell}[1]{%
+  \parbox[t]{\linewidth}{\RaggedRight\ttfamily\small\nolinkurl{#1}}%
+}
+
+\newcommand{\ProjectOptionalGraphic}[3][width=0.95\linewidth]{%
+  \IfFileExists{#2}{%
+    \scalebox{\SPGlobalImageScale}{\includegraphics[#1]{#2}}%
+  }{%
+    \setlength{\fboxsep}{8pt}%
+    \fbox{%
+      \parbox[c][0.18\textheight][c]{0.92\linewidth}{%
+        \centering
+        \textbf{Placeholder image pending}\\[4pt]
+        #3\\[4pt]
+        \texttt{#2}%
+      }%
+    }%
+  }%
+}
+
+\newcommand{\CorrCell}[1]{%
+  \begingroup
+  \pgfmathtruncatemacro{\CorrShade}{min(100, round(abs(#1) * 100))}%
+  \ifdim #1 pt < 0pt
+    \edef\SPColorSpec{RoyalBlue!\CorrShade!white}%
+  \else
+    \edef\SPColorSpec{red!\CorrShade!white}%
+  \fi
+  \expandafter\cellcolor\expandafter{\SPColorSpec}{\scriptsize #1}%
+  \endgroup
+}
+
+\BeforeBeginEnvironment{tabular}{%
+  \begingroup
+  \setlength{\fboxsep}{\SPTableFrameSep}%
+  \setlength{\fboxrule}{0.6pt}%
+  \begin{lrbox}{\SPTableBox}%
+}
+\AfterEndEnvironment{tabular}{%
+  \end{lrbox}%
+  \fbox{\usebox{\SPTableBox}}%
+  \endgroup
+}
+
+\NewDocumentCommand{\ProjectFigure}{s O{!htbp} O{width=0.88\linewidth} m m m m}{%
+  \begin{figure}[#2]
+    \centering
+    \IfBooleanTF{#1}{%
+      \scalebox{\SPGlobalImageScale}{\adjustimage{max totalsize={0.96\linewidth}{\SPFigureHeight},center,#3}{#4}}%
+    }{%
+      \begingroup
+      \setlength{\fboxsep}{\SPFigureFrameSep}%
+      \scalebox{\SPGlobalImageScale}{\fcolorbox{black}{white}{\adjustimage{max totalsize={0.96\linewidth}{\SPFigureHeight},center,#3}{#4}}}%
+      \endgroup
+    }%
+    \caption[#5]{#6}
+    \label{#7}
+  \end{figure}
+}
+
+\NewDocumentCommand{\ProjectTwoFigure}{s O{!htbp} O{width=0.46\linewidth} O{width=0.46\linewidth} m m m m m}{%
+  \begin{figure}[#2]
+    \centering
+    \IfBooleanTF{#1}{%
+      \scalebox{\SPGlobalImageScale}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#3}{#5}}%
+      \hfill
+      \scalebox{\SPGlobalImageScale}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#4}{#6}}%
+    }{%
+      \begingroup
+      \setlength{\fboxsep}{\SPFigureFrameSep}%
+      \scalebox{\SPGlobalImageScale}{\fcolorbox{black}{white}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#3}{#5}}}%
+      \hfill
+      \scalebox{\SPGlobalImageScale}{\fcolorbox{black}{white}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#4}{#6}}}%
+      \endgroup
+    }%
+    \caption[#7]{#8}
+    \label{#9}
+  \end{figure}
+}
+%% ********* (Your) Document Settings (End) **************
+
+
+\begin{document}
+\frontmatter
+	\maketitle
+	\input{frontmatter/copyright}
+	%\input{frontmatter/dedication}        % include a dedication.tex file
+	\input{frontmatter/acknowledgements}   % include an acknowledgements.tex file
+	\input{frontmatter/abstract}\if@openright\cleardoublepage\else\clearpage\fi
+	\tableofcontents*\if@openright\cleardoublepage\else\clearpage\fi
+	\listoffigures*\if@openright\cleardoublepage\else\clearpage\fi
+	\listoftables*\if@openright\cleardoublepage\else\clearpage\fi
+	\input{frontmatter/abbreviations}\if@openright\cleardoublepage\else\clearpage\fi
+
+%% Note: always use \input as you cannot nest \includes (amongst other things)
+\pagestyle{nuspage}
+\floatpagestyle{nuspage}
+
+\mainmatter
+	\input{chap1/introduction_main}              % Ch1: Introduction
+	\input{chap2/literature_review}              % Ch2: Literature Review & Market Research
+	\input{chap3/data_collection}                % Ch3: Data Collection and Preparation
+	\input{chap4/feature_engineering}            % Ch4: Feature Engineering and Selection
+	\input{chap5/predictive_modeling}            % Ch5: Predictive Modelling and Results
+	\input{chap6/credit_scoring}                 % Ch6: Credit Scoring and Business Application
+	\input{chap7/fairness_explainability}        % Ch7: Fairness, Explainability, and Governance
+	\input{chap8/conclusion}                     % Ch8: Conclusion and Future Work
+
+% Reference
+\if@openright\cleardoublepage\else\clearpage\fi
+\printbibliography[title=References]
+
+\appendix
+	\input{appA/appendix_a_main}                 % App A: Project Proposal
+	\input{appB/appendix_b_main}                 % App B: Mapped System Functionalities
+	\input{appC/appendix_c_main}                 % App C: Code Architecture
+	\input{appD/appendix_d_main}                 % App D: Supplementary Figures
+
+\pagestyle{nuspageback}
+
+\end{document}
+
+%%% The End %%%

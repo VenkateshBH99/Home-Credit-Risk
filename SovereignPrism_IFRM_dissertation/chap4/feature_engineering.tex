@@ -1,0 +1,268 @@
+\chapter{Feature Engineering and Selection}
+\label{chap:feature_engineering}
+
+\section{Aggregation Architecture}
+\label{sec:aggregation}
+
+The central technical challenge of this project is that the raw data is not at one row per borrower. The model ultimately needs one feature vector per applicant, but the supplementary tables contain over 55 million records at the credit-month or payment-event level. The core technical bridge between raw relational data and downstream credit-risk modelling is \textit{aggregation}: converting multi-row historical behaviour into applicant-level summary features.
+
+The modular pipeline (\texttt{pipelines/aggregator\_pipeline.py}) implements this aggregation with two distinct branches:
+
+\begin{itemize}
+    \item \textbf{Traditional:} Application data only (from \texttt{application\_train.csv}), representing what is available at the moment of loan application.
+    \item \textbf{Combined:} Application data merged with aggregated supplementary tables, incorporating behavioural and bureau signals accumulated over the applicant's prior interactions.
+\end{itemize}
+
+\subsection{Coverage Flag Design}
+
+A key design decision was the introduction of \textit{coverage flags} as binary features: \texttt{has\_bureau}, \texttt{has\_bb}, \texttt{has\_prev}, \texttt{has\_pos}, \texttt{has\_ins}, and \texttt{has\_cc}. These flags explicitly encode whether any historical data exists for a given applicant in each supplementary table. Without them, the absence of historical data would disappear into generic nulls after the left-join, becoming indistinguishable from genuine missing values within existing records.
+
+This design is particularly important for the thin-file population. An applicant with \texttt{has\_bureau = 0} is genuinely credit-invisible in external systems---this is informative and potentially predictive. By preserving this distinction, the model can learn separate risk profiles for applicants with and without historical data in each data source.
+
+\section{Feature Engineering by Data Source}
+\label{sec:feature_by_source}
+
+\subsection{Application-Level Derived Features}
+
+Beyond the 122 raw application columns, several derived features were engineered to capture financial ratios and contextual comparisons that are standard in credit scoring practice:
+
+\begin{itemize}
+    \item \textbf{Financial ratios:} credit-to-income, annuity-to-income, credit-to-annuity, credit versus goods-price difference, family income ratio, children income ratio
+    \item \textbf{Temporal ratios:} \texttt{CREDIT\_TERM} (credit/annuity), \texttt{BIRTH\_EMPLOYED\_PERCENT} (employment duration relative to age), registration/employment/ID timing ratios, estimated age at loan finish
+    \item \textbf{Contextual features:} Group-median income ratios by contract type, housing type, organisation type, occupation type, and education type. These capture whether an applicant's income is above or below the typical income for their peer group---a feature used extensively in production scorecards~\cite{siddiqi2012}.
+    \item \textbf{Categorical expansion:} One-hot encoding of all categorical columns, expanding object-type variables into binary indicators
+\end{itemize}
+
+\subsection{Bureau and Bureau Balance Features}
+
+Bureau aggregation creates applicant-level external credit exposure features from 1.72 million bureau records:
+
+\begin{itemize}
+    \item Counts of bureau credits (total, active, closed, bad-debt)
+    \item Active loan ratio (\texttt{bur\_active\_ratio}), debt-to-credit ratio (\texttt{bur\_debt\_credit\_ratio}), average credit duration (\texttt{bur\_avg\_credit\_duration})
+    \item Age-of-credit statistics from \texttt{DAYS\_CREDIT}, overdue statistics from \texttt{CREDIT\_DAY\_OVERDUE}
+    \item Credit amounts, debt totals, overdue amounts, annuity, prolongation, and update-date summaries
+    \item Counts for the top five bureau credit types
+\end{itemize}
+
+Bureau balance aggregation uses a two-stage process to handle the three-level relational hierarchy:
+\begin{enumerate}
+    \item \textbf{Status conversion:} Monthly \texttt{STATUS} codes are converted to numeric delinquency severity (\texttt{C}, \texttt{0}, \texttt{X} $\rightarrow$ 0; \texttt{1}--\texttt{5} $\rightarrow$ 1--5).
+    \item \textbf{Credit-level aggregation:} Monthly records are aggregated to the bureau-credit level via \texttt{SK\_ID\_BUREAU}, producing per-credit delinquency summaries.
+    \item \textbf{Applicant-level aggregation:} Credit-level features are merged back to \texttt{bureau} to recover \texttt{SK\_ID\_CURR}, then aggregated to the applicant level.
+\end{enumerate}
+
+The resulting features capture: months tracked, worst-case delinquency severity, mean delinquency, total delinquent months, number of credits with tracked history, and \texttt{bb\_dpd\_month\_ratio}. This two-stage approach is necessary because the bureau balance table (27.3 million records) links to applicants only through the intermediate bureau table.
+
+Rather than keeping the earlier screenshot artifact in this chapter, the dissertation now documents the lifecycle score architecture as native tables in Chapter~\ref{sec:abc_framework}. That placement is more appropriate because the image was not a bureau aggregation diagram; it was a business-facing summary of the A/B/C score families and their auxiliary overlays.
+
+\subsection{Previous Application Features}
+
+Internal application-history features are engineered from 1.67 million previous Home Credit applications:
+
+\begin{itemize}
+    \item Number of previous applications, counts of approved, refused, and cancelled applications
+    \item Derived approval and refusal rates
+    \item Amount summaries for application, credit, down payment, goods price, and annuity
+    \item Timing summaries from \texttt{DAYS\_DECISION}, modal application hour
+    \item Mean instalment count, down-payment rate, and credit-versus-application ratio (\texttt{prev\_credit\_vs\_app})
+\end{itemize}
+
+These features capture Home Credit's own prior relationship with each applicant, providing an internal view of credit demand and approval patterns that complements the external bureau perspective.
+
+\subsection{POS Cash and Credit Card Features}
+
+\begin{itemize}
+    \item \textbf{POS Cash} (10 million records, 94.1\% coverage): Number of contracts, tracked months span, DPD and DPD\_DEF summaries, completed versus active contract counts, remaining-instalment summaries, \texttt{pos\_dpd\_ratio}, and \texttt{pos\_completion\_rate}.
+    \item \textbf{Credit Card} (3.84 million records, 28.3\% coverage): Number of cards, tracked months, balance/limit/drawing/payment/receivable summaries, utilisation rate (\texttt{cc\_utilization\_rate}), DPD ratio (\texttt{cc\_dpd\_ratio}), and payment-versus-minimum ratio (\texttt{cc\_payment\_vs\_min}).
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Credit Card Balance Feature Engineering Formulas}
+\label{tab:cc_features}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{L{3.2cm}L{6.2cm}L{5.3cm}}
+\toprule
+\textbf{Feature} & \textbf{Formula} & \textbf{Meaning} \\
+\midrule
+\CodeCell{cc_avg_utilization} & \CodeCell{mean(AMT_BALANCE / AMT_CREDIT_LIMIT_ACTUAL) per applicant} & Average credit card usage relative to the available limit \\
+\CodeCell{cc_max_utilization} & \CodeCell{max(AMT_BALANCE / AMT_CREDIT_LIMIT_ACTUAL) per applicant} & Peak utilisation, indicating how close the customer came to maxing out the card \\
+\CodeCell{cc_avg_dpd} & \CodeCell{mean(SK_DPD) per applicant} & Chronic lateness signal measured as average days past due \\
+\CodeCell{cc_max_dpd} & \CodeCell{max(SK_DPD) per applicant} & Worst observed late-payment episode \\
+\CodeCell{cc_late_count} & \CodeCell{sum(SK_DPD > 0) per applicant} & Number of months with any late payment \\
+\CodeCell{cc_payment_ratio} & \CodeCell{mean(AMT_PAYMENT_CURRENT / AMT_INST_MIN_REGULARITY) per applicant} & How much the customer pays relative to the minimum due \\
+\CodeCell{cc_drawing_ratio} & \CodeCell{mean(AMT_DRAWINGS_ATM_CURRENT / AMT_CREDIT_LIMIT_ACTUAL) per applicant} & ATM cash withdrawal intensity relative to the card limit \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Instalment Payment Features}
+
+The instalment payment table is one of the most important behavioural feature blocks, as it directly records each repayment event. The aggregation first derives two key intermediate variables:
+
+\begin{itemize}
+    \item \texttt{ins\_days\_diff} $=$ \texttt{DAYS\_INSTALMENT} $-$ \texttt{DAYS\_ENTRY\_PAYMENT}: the timing gap between when a payment was due and when it was actually made (positive = late)
+    \item \texttt{ins\_payment\_diff} $=$ \texttt{AMT\_INSTALMENT} $-$ \texttt{AMT\_PAYMENT}: the amount shortfall between what was owed and what was paid (positive = underpayment)
+\end{itemize}
+
+These are then aggregated to the applicant level to produce:
+\begin{itemize}
+    \item Counts of payments and contracts
+    \item Early/late timing summaries (mean, max, min of \texttt{ins\_days\_diff})
+    \item Counts of late and on-time payments
+    \item Payment shortfall summaries
+    \item Payment and instalment totals
+    \item \texttt{ins\_late\_ratio}: proportion of payments that were late
+    \item \texttt{ins\_underpay\_ratio}: proportion of payments that were underpaid
+    \item \texttt{ins\_payment\_ratio}: total payments divided by total instalments owed
+\end{itemize}
+
+The \texttt{ins\_late\_ratio} and \texttt{ins\_underpay\_ratio} proved to be among the most predictive behavioural features, as they directly measure repayment reliability---the core construct that credit scoring aims to predict.
+
+\subsection{Feature-Space Summary}
+
+Table~\ref{tab:feature_evolution} summarises how the feature space evolves through the pipeline from raw aggregation through preprocessing to model-ready datasets.
+
+\begin{table}[H]
+\centering
+\caption{Feature-Space Evolution Through the Pipeline}
+\label{tab:feature_evolution}
+\begin{tabular}{lrl}
+\toprule
+\textbf{Stage} & \textbf{Columns} & \textbf{Notes} \\
+\midrule
+Traditional Aggregated & 252 & Application features + derived ratios \\
+Combined Aggregated & 337 & + supplementary table features + coverage flags \\
+Traditional No-PCA Preprocessed & 187 & After variance/correlation filtering \\
+Traditional PCA Preprocessed & 174 & After PCA reduction (90\% variance) \\
+Combined No-PCA Preprocessed & 242 & After variance/correlation filtering \\
+Combined PCA Preprocessed & 208 & After PCA reduction (90\% variance) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The combined pipeline starts with more features (337 versus 252) but ends with fewer after preprocessing (242 versus 187) due to higher inter-feature correlation among supplementary table aggregations. This is expected: many behavioural features capture overlapping aspects of repayment behaviour (e.g., DPD ratios across POS, credit card, and instalment tables are correlated).
+
+\section{Traditional vs Alternative Data Strategy}
+\label{sec:trad_vs_alt}
+
+A central analytical question of this project is whether alternative data adds meaningful predictive value beyond traditional application data. To address this, two data strategies were compared systematically.
+
+\begin{table}[H]
+\centering
+\caption{Traditional versus Combined Data Strategy}
+\label{tab:trad_vs_alt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{p{3cm}p{5.3cm}p{5.3cm}}
+\toprule
+\textbf{Dimension} & \textbf{Traditional (Application-Only)} & \textbf{Combined (Traditional + Alternative)} \\
+\midrule
+Primary source & \CodeCell{application_train.csv} only & All 8 interlinked tables aggregated to applicant level \\
+Feature count & Approximately 228 engineered features before downstream filtering & Approximately 205 aggregated behavioural and bureau features before downstream filtering \\
+Signal type & Static snapshot of who the applicant is at the time of application & Dynamic view of how the applicant behaves with credit over time \\
+Strength & Strong baseline for origination decisioning and scorecard interpretability & Richer behavioural context for thin-file applicants and second-order risk patterns \\
+Limitation & No repayment history, cross-product exposure, or monthly payment-pattern signal & More complex aggregation logic and higher inter-feature correlation \\
+Business reading & Best when bureau and demographic information already exist & Best when behavioural footprints are needed to compensate for sparse bureau history \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{itemize}
+    \item \textbf{Traditional (Application-Only):} Uses only the \texttt{application\_train.csv} table, representing static information typically available at the moment of loan application---demographics, income, employment, and external scores. This approach yields approximately 228 features after encoding and captures \textit{who the applicant is}.
+    \item \textbf{Combined (Traditional + Alternative):} Integrates all interlinked tables, capturing both static characteristics and dynamic behavioural patterns from bureau, previous applications, POS, credit card, and instalment histories. This approach yields approximately 205 aggregated features derived from more than 55 million supplementary records and captures \textit{how the applicant behaves with credit over time}.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Alternative Data Proxy Mapping: How Dataset Features Map to Real-World Alternative Data Sources}
+\label{tab:alt_data_proxies}
+\begin{tabular}{p{2.7cm}p{2.9cm}p{3.4cm}p{3.9cm}}
+\toprule
+\textbf{Alt-Data Proxy} & \textbf{Real-World Equivalent} & \textbf{What It Captures} & \textbf{How It Helps Thin-File Applicants} \\
+\midrule
+\CodeCell{EXT_SOURCE_1/2/3} & External model scores & Non-bureau risk signals & Risk signal even with zero bureau records \\
+Phone flags & Telco/digital footprint & Device stability & Scorable signal where bureau data is empty \\
+Social circle & Social network risk & Peer default patterns & ``Birds of a feather'' behavioural proxy \\
+Document flags & \ac{KYC}/identity depth & Identity verification willingness & Correlates with repayment intent \\
+Housing/property & Property records, utility data & Asset proxies & Stable housing = lower risk \\
+Regional risk & Area-level socioeconomic & Geographic risk concentration & Context for low-risk region applicants \\
+Credit card behaviour & Open banking data & Utilisation and payment patterns & Complements bureau DPD scores \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key insight is that traditional features only work reliably when the applicant already has established bureau records. For the approximately 1,700 credit-invisible applicants (no external scores at all) and the approximately 50,000 thin-file applicants (\texttt{EXT\_SOURCE\_1} missing) in the dataset, alternative behavioural data provides independent risk signals that do not require prior formal credit history. This directly addresses the business objective of expanding credit access to underserved populations (Section~\ref{sec:business_objectives}).
+
+\textbf{The design rationale also aligns with DBS's public framing that credit scores depend materially on financial behaviour history, especially payment behaviour and credit utilisation patterns.}~\cite{dbs_credit_score} That external industry framing maps closely onto this project's decision to aggregate instalment timing, \ac{DPD}, balance utilisation, and previous-application histories instead of treating the application form as a sufficient representation of borrower risk.
+
+\FloatBarrier
+
+\section{Feature Selection}
+\label{sec:feature_selection}
+
+Feature selection serves three purposes in credit scoring: reducing overfitting risk, improving model interpretability, and ensuring compliance with regulatory requirements for explainable lending decisions.
+
+\subsection{WoE/IV Feature Selection}
+
+Weight of Evidence (WoE) and Information Value (IV) were applied to quantify the predictive strength of each variable~\cite{siddiqi2012}. WoE transforms categorical or binned variables into a continuous scale that reflects the log-odds difference between good and bad borrowers in each bin, while IV aggregates this information into a single measure of overall predictive power.
+
+\ProjectFigure*[!htbp][width=0.9\textwidth]{pptx/woe iv feature selection - combined pipeline.png}{Combined WoE and IV}{WoE/IV feature-selection results for the combined pipeline. The overall IV distribution shows that while most features are individually weak, approximately 70 features exceed the usability threshold.}{fig:woe_iv}
+
+The IV distribution indicated that most features were weak individually, consistent with the correlation analysis findings in Section~\ref{subsec:correlation_eda}. Approximately 70 features exceeded the IV $> 0.02$ threshold and were retained. The two ``strong'' features (IV $> 0.3$) are \texttt{EXT\_SOURCE\_2} and \texttt{EXT\_SOURCE\_3}, consistent with their dominance in the correlation and SHAP analyses. The three ``medium'' features include \texttt{EXT\_SOURCE\_1} and key financial ratios. Even though only a small number of features are individually strong, the combination of many moderately informative variables produces a robust ensemble signal---this is the fundamental justification for multivariate modelling over simple rule-based scoring.
+
+\begin{table}[H]
+\centering
+\caption{Information Value Interpretation Scale}
+\label{tab:iv_scale}
+\begin{tabular}{lll}
+\toprule
+\textbf{IV Range} & \textbf{Predictive Power} & \textbf{Observed Count} \\
+\midrule
+$< 0.02$ & Useless & 93 \\
+$0.02$ to $0.10$ & Weak & 65 \\
+$0.10$ to $0.30$ & Medium & 3 \\
+$0.30$ to $0.50$ & Strong & 2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Variance-Based Filtering}
+
+Near-zero-variance numeric columns (threshold $< 0.01$) were identified on the training split and removed across all splits. This step eliminates features that are effectively constant and provide no discriminatory information. The variance threshold is applied on the training set only to prevent leakage.
+\ProjectFigure[!htbp][width=0.85\textwidth]{venky/fairness_metric_demographic_parity.png}{Top IV Features}{Top 30 features by information value for the traditional scorecard feature-selection workflow. The ranking reinforces the dominance of the \texttt{EXT\_SOURCE} variables, followed by bureau exposure, employment duration, and instalment repayment features.}{fig:iv_top_features}
+
+\subsection{Correlation-Based Removal}
+
+Highly correlated feature pairs ($|r| > 0.8$) were identified, and one feature from each pair was dropped to reduce multicollinearity. This step is particularly important for logistic regression, where multicollinearity inflates coefficient variance and makes WoE-based scorecards unreliable. For tree-based models, multicollinearity is less harmful but still wastes model capacity on redundant features. The feature retained from each pair was selected based on higher individual IV score.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{discussion/Credit_Card_Balance_correlation_matrix_key.png}{Feature Correlation Matrix}{Correlation matrix of key features showing multicollinearity patterns. Notable pairs include AMT\_CREDIT/AMT\_GOODS\_PRICE ($r = 0.987$) and AMT\_CREDIT/AMT\_ANNUITY ($r = 0.770$).}{fig:correlation_matrix}
+
+
+\section{Dimensionality Reduction: PCA Analysis}
+\label{sec:pca}
+
+Principal Component Analysis was applied both as a dimensionality reduction technique for the PCA dataset variants and as an interpretability exercise to understand the latent structure of the feature space~\cite{jolliffe2002}.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_pca_scree_plot_explained_variance_1.png}{PCA Scree Plot}{Detailed scree plot from the traditional PCA pipeline showing individual and cumulative variance explained by each principal component.}{fig:pca_scree_detailed}
+
+The scree plot reveals that PC1 alone covers approximately 17.5\% of variance, but 51 components are required to reach 90\% cumulative coverage. This indicates \textit{no strong latent structure}---there is one dominant signal (likely driven by the EXT\_SOURCE variables) but the remaining information is spread diffusely across many feature clusters. The earlier slide artifact previously placed here was in fact a bureau-credit exposure histogram, so it has been relocated to the bureau EDA section (Chapter~\ref{subsec:bureau_eda}) where it belongs.
+
+\subsection{PCA Impact on Model Performance}
+
+Performance slightly dropped when using PCA for tree-based models. This is expected: PCA is designed for linear methods that benefit from orthogonal inputs, while tree-based and ensemble models lose their feature-level splitting granularity when inputs are compressed into abstract components. A tree splitting on ``EXT\_SOURCE\_3 $< 0.45$'' is interpretable; a tree splitting on ``PC7 $< -0.23$'' is not.
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/pca_plot_c_pca_loadings_rotation_p_3.png}{Rotated PCA Loadings}{PCA loadings after varimax rotation, showing how original features map to rotated components. The rotation improves interpretability by aligning components with recognisable feature groups.}{fig:pca_loadings}
+
+\subsection{Factor Analysis and Statistical Validation}
+
+Varimax rotation was applied to improve factor interpretability, and factor analysis (maximum likelihood extraction) with KMO and Bartlett tests was conducted for statistical validation:
+
+\begin{itemize}
+    \item \textbf{KMO statistic:} Measures sampling adequacy for factor analysis. A KMO $> 0.6$ indicates that the data is suitable for factor analysis.
+    \item \textbf{Bartlett's test of sphericity:} Tests whether the correlation matrix is significantly different from an identity matrix ($p < 0.001$), confirming that meaningful correlations exist among the variables.
+\end{itemize}
+
+This exercise revealed the data's structural complexity and justified the modelling choice of using original features for tree-based models while retaining PCA as a separate experimental variant. The PCA variants serve primarily as a robustness check---demonstrating that model performance is not an artefact of high feature dimensionality---rather than as the preferred modelling approach. Results across all four dataset variants (traditional/combined $\times$ PCA/no-PCA) are compared in Chapter~\ref{chap:modeling}.
