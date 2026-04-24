@@ -12,83 +12,43 @@ The SHAP analysis was conducted for each model family on both the traditional (a
 
 \subsubsection{Logistic Regression}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.45\textwidth]{pptx/SHAP explainability - logistic regression - traditional.png}
-    \includegraphics[width=0.45\textwidth]{pptx/SHAP explainability - logistic regression - combined.png}
-    \caption{SHAP feature importance for Logistic Regression: Traditional dataset (left) vs Combined dataset (right). The traditional model relies heavily on employment duration and income type, while the combined model shifts toward external source scores.}
-    \label{fig:shap_lr}
-\end{figure}
+\ProjectTwoFigure[!htbp][width=0.45\textwidth][width=0.45\textwidth]{pptx/SHAP explainability - logistic regression - traditional.png}{pptx/SHAP explainability - logistic regression - combined.png}{SHAP LR: Trad vs Combined}{SHAP feature importance for Logistic Regression: Traditional dataset (left) vs Combined dataset (right). The traditional model relies heavily on employment duration and income type, while the combined model shifts toward external source scores.}{fig:shap_lr}
+
 
 In the traditional dataset, a few features---especially \texttt{DAYS\_EMPLOYED}, income type, \texttt{AMT\_CREDIT}, and the \texttt{EXT\_SOURCE} variables---explain most of the variation in predicted default risk. The concentration of importance in a small number of features is characteristic of linear models, which allocate predictive weight through a single coefficient per feature. In the combined dataset, Logistic Regression shifts toward external sources as the dominant drivers, with behavioural features providing marginal additional signal.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.45\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_3.png}
-    \includegraphics[width=0.45\textwidth]{notebook/final_traditional_shap_summary_plot_beeswarm_sho_4.png}
-    \caption{SHAP bar plot (left) and beeswarm plot (right) for Logistic Regression on the traditional dataset. The beeswarm plot shows the direction of each feature's effect: red dots (high feature values) on the right indicate that higher values push predictions toward default.}
-    \label{fig:shap_lr_detailed}
-\end{figure}
+\ProjectFigure[!htbp][width=0.62\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_3.png}{SHAP LR Detail}{Detailed SHAP importance bar plot for Logistic Regression on the traditional dataset. The dominant features align with the paired traditional-versus-combined comparison above, so the repeated beeswarm panel is omitted here for concision.}{fig:shap_lr_detailed}
+
 
 \subsubsection{Random Forest}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.45\textwidth]{pptx/SHAP explainability - random forest - traditional.png}
-    \includegraphics[width=0.45\textwidth]{pptx/SHAP explainability - random forest - combined.png}
-    \caption{SHAP feature importance for Random Forest: Traditional (left) vs Combined (right). External scores dominate in both datasets, with other features contributing substantially less.}
-    \label{fig:shap_rf}
-\end{figure}
+\ProjectTwoFigure[!htbp][width=0.45\textwidth][width=0.45\textwidth]{pptx/SHAP explainability - random forest - traditional.png}{pptx/SHAP explainability - random forest - combined.png}{SHAP RF: Trad vs Combined}{SHAP feature importance for Random Forest: Traditional (left) vs Combined (right). External scores dominate in both datasets, with other features contributing substantially less.}{fig:shap_rf}
+
 
 Random Forest models are primarily driven by external scores in both datasets. Age (\texttt{DAYS\_BIRTH}), education type, and financial ratios contribute, but their overall impact is much smaller relative to the \texttt{EXT\_SOURCE} variables. The Random Forest's bagging mechanism distributes importance more evenly across correlated features compared to boosting methods, resulting in a flatter importance tail.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.45\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_6.png}
-    \includegraphics[width=0.45\textwidth]{notebook/final_traditional_shap_summary_plot_beeswarm_sho_7.png}
-    \caption{SHAP bar plot (left) and beeswarm plot (right) for Random Forest on the traditional dataset. The concentration of importance in EXT\_SOURCE variables is even more pronounced than for Logistic Regression.}
-    \label{fig:shap_rf_detailed}
-\end{figure}
+\ProjectFigure[!htbp][width=0.62\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_6.png}{SHAP RF Detail}{Detailed SHAP importance bar plot for Random Forest on the traditional dataset. EXT\_SOURCE variables remain dominant, with the importance tail flatter than the boosting models due to bagging.}{fig:shap_rf_detailed}
+
 
 \subsubsection{XGBoost}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.45\textwidth]{pptx/SHAP explainability - xgboost - traditional.png}
-    \includegraphics[width=0.45\textwidth]{pptx/SHAP explainability - xgboost - combined.png}
-    \caption{SHAP feature importance for XGBoost: Traditional (left) vs Combined (right). The combined model incorporates a wider variety of engineered features, spreading predictive influence across more diverse financial behaviours.}
-    \label{fig:shap_xgb}
-\end{figure}
+\ProjectTwoFigure[!htbp][width=0.45\textwidth][width=0.45\textwidth]{pptx/SHAP explainability - xgboost - traditional.png}{pptx/SHAP explainability - xgboost - combined.png}{SHAP XGB: Trad vs Combined}{SHAP feature importance for XGBoost: Traditional (left) vs Combined (right). The combined model incorporates a wider variety of engineered features, spreading predictive influence across more diverse financial behaviours.}{fig:shap_xgb}
+
 
 The traditional XGBoost model relies heavily on external source variables and \texttt{AMT\_GOODS\_PRICE}. The combined model shows a notable shift: it incorporates a wider variety of engineered features such as \texttt{CREDIT\_ANNUITY\_PERCENT} and instalment history, spreading predictive influence across more diverse financial behaviours. This diversification is beneficial for model robustness---a model that relies less on any single feature is less vulnerable to feature drift or data quality issues.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.45\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_10.png}
-    \includegraphics[width=0.45\textwidth]{notebook/final_traditional_shap_summary_plot_beeswarm_sho_11.png}
-    \caption{SHAP bar plot (left) and beeswarm plot (right) for XGBoost on the traditional dataset. XGBoost's sequential boosting creates sharper feature importance gradients than Random Forest's bagging.}
-    \label{fig:shap_xgb_detailed}
-\end{figure}
+\ProjectFigure[!htbp][width=0.62\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_10.png}{SHAP XGB Detail}{Detailed SHAP importance bar plot for XGBoost on the traditional dataset. The sharper drop-off after the top-ranked features reflects the more concentrated gradient-boosting structure.}{fig:shap_xgb_detailed}
+
 
 \subsubsection{LightGBM}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.45\textwidth]{pptx/SHAP explainability - LightGBM - traditional.png}
-    \includegraphics[width=0.45\textwidth]{pptx/SHAP explainability - LightGBM - combined.png}
-    \caption{SHAP feature importance for LightGBM: Traditional (left) vs Combined (right). The combined model leverages aggregated data from previous applications and instalment payment history, producing the most diversified feature importance profile.}
-    \label{fig:shap_lgbm}
-\end{figure}
+\ProjectTwoFigure[!htbp][width=0.45\textwidth][width=0.45\textwidth]{pptx/SHAP explainability - LightGBM - traditional.png}{pptx/SHAP explainability - LightGBM - combined.png}{SHAP LGBM: Trad vs Combined}{SHAP feature importance for LightGBM: Traditional (left) vs Combined (right). The combined model leverages aggregated data from previous applications and instalment payment history, producing the most diversified feature importance profile.}{fig:shap_lgbm}
+
 
 LightGBM shows similar patterns to XGBoost due to their shared gradient-boosting foundations. The combined model leverages more aggregated data from previous applications and instalment payment history. LightGBM's leaf-wise growth strategy tends to create deeper, more specialised trees that can extract value from a broader set of features, resulting in the most diversified feature importance profile among all four models.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.45\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_14.png}
-    \includegraphics[width=0.45\textwidth]{notebook/final_traditional_shap_summary_plot_beeswarm_sho_15.png}
-    \caption{SHAP bar plot (left) and beeswarm plot (right) for LightGBM on the traditional dataset. The beeswarm reveals clear directional effects: higher EXT\_SOURCE values push toward non-default (left), while younger age pushes toward default (right).}
-    \label{fig:shap_lgbm_detailed}
-\end{figure}
+\ProjectFigure[!htbp][width=0.62\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_14.png}{SHAP LGBM Detail}{Detailed SHAP importance bar plot for LightGBM on the traditional dataset. The diversified importance profile is consistent with the champion model's broader use of behavioural and contextual features.}{fig:shap_lgbm_detailed}
+
 
 \subsection{Cross-Model Feature Importance Summary}
 
@@ -100,12 +60,7 @@ Across all four models and both datasets, three consistent patterns emerge:
     \item \textbf{Combined models diversify:} When supplementary data is added, the importance of application-level features decreases as behavioural features absorb some of the predictive signal. This is desirable from a robustness perspective, as it reduces single-feature dependency.
 \end{enumerate}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{venky/shap_summary_plot_risk_drivers.png}
-    \caption{SHAP summary plot showing the key risk drivers across the champion model. The colour gradient (red = high, blue = low feature value) reveals the directional effect of each feature on default prediction.}
-    \label{fig:shap_summary_risk}
-\end{figure}
+The paired SHAP comparisons already show the dominant risk drivers clearly, so the previously duplicated miscaptioned figure is removed from this chapter and reused in Chapter~\ref{subsec:prev_app_eda}, where it actually belongs as a previous-application contract-status visual.
 
 \section{LIME Explanations}
 \label{sec:lime}
@@ -128,19 +83,11 @@ Two primary metrics were used to quantify potential gender-based bias:
     \item \textbf{Equalized Odds (Recall Disparity):} Checks whether the model is equally accurate at catching actual defaults across groups~\cite{hardt2016}. The equalized odds difference is $|TPR_\text{male} - TPR_\text{female}|$. A model satisfying equalized odds makes errors at equal rates across groups.
 \end{itemize}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{pptx/fairness evaluation by gender.png}
-    \caption{Fairness evaluation by gender across all four model families. Demographic parity disparity varies by model, while equalized odds disparity is uniform---indicating that bias originates from the data, not the algorithm.}
-    \label{fig:fairness_gender}
-\end{figure}
+\ProjectFigure[!htbp][width=0.8\textwidth]{pptx/fairness evaluation by gender.png}{Fairness by Gender}{Fairness evaluation by gender across all four model families. Demographic parity disparity varies by model, while equalized odds disparity is uniform---indicating that bias originates from the data, not the algorithm.}{fig:fairness_gender}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_fairness_metrics_acr_16.png}
-    \caption{Detailed fairness metrics for the traditional dataset across all models, showing selection rates, true positive rates, and false positive rates by gender group.}
-    \label{fig:fairness_traditional}
-\end{figure}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_visualize_fairness_metrics_acr_16.png}{Traditional Fairness Metrics}{Detailed fairness metrics for the traditional dataset across all models, showing selection rates, true positive rates, and false positive rates by gender group.}{fig:fairness_traditional}
+
 
 Key findings:
 
@@ -153,12 +100,8 @@ Key findings:
 
 \subsection{Gender Bias Analysis: The XNA Group}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{pptx/gender bias analysis.png}
-    \caption{Selection rates by gender across all models. The XNA group (non-disclosed gender) reveals a critical failure mode for Logistic Regression, which predicts exactly 0 for this group.}
-    \label{fig:gender_bias}
-\end{figure}
+\ProjectFigure[!htbp][width=0.8\textwidth]{pptx/gender bias analysis.png}{Gender Bias by Group}{Selection rates by gender across all models. The XNA group (non-disclosed gender) reveals a critical failure mode for Logistic Regression, which predicts exactly 0 for this group.}{fig:gender_bias}
+
 
 The XNA group---applicants who chose not to disclose their gender (4 records in the dataset)---reveals an important failure mode. Logistic Regression predicts exactly 0 default probability for this group, a statistically impossible result caused by the model's inability to learn from such a small sample size. This is a dangerous overconfident prediction: it would auto-approve all non-disclosing applicants regardless of their actual risk profile.
 
@@ -184,19 +127,7 @@ Three complementary mitigation strategies were explored:
     \item \textbf{Group-specific threshold optimisation:} Rather than using a uniform 0.5 cutoff for all groups, group-specific thresholds were evaluated to equalise selection rates. This achieves demographic parity by construction but may sacrifice equalized odds---a trade-off that must be evaluated against the specific regulatory framework applicable to the lending jurisdiction.
 \end{enumerate}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{venky/fairness_metric_demographic_parity.png}
-    \caption{Demographic parity analysis showing selection rates before and after ThresholdOptimizer application. The post-mitigation selection rates are substantially more balanced across gender groups.}
-    \label{fig:fairness_dp}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{venky/fairness_metric_equalized_odds.png}
-    \caption{Equalized odds analysis showing true positive and false positive rate parity across gender groups. The uniformity of equalized odds across models confirms that bias is data-driven rather than algorithm-driven.}
-    \label{fig:fairness_eo}
-\end{figure}
+The originally inserted ``before/after fairness'' graphics were in fact IV feature-selection artifacts, so they have been relocated to Chapter~\ref{sec:feature_selection}. This chapter therefore keeps the fairness discussion on genuinely fairness-specific visuals and measured disparities.
 
 \section{Model Monitoring Framework}
 \label{sec:monitoring}
@@ -218,12 +149,8 @@ The industry-standard thresholds are:
     \item PSI $\geq 0.25$: Significant population shift; model retraining required
 \end{itemize}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/home_credit_modeling_combined_psi_distribution_visualization_28.png}
-    \caption{PSI distribution visualisation comparing score distributions between training and validation populations. The PSI value confirms acceptable population stability.}
-    \label{fig:psi}
-\end{figure}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_modeling_combined_psi_distribution_visualization_28.png}{PSI Distribution}{PSI distribution visualisation comparing score distributions between training and validation populations. The PSI value confirms acceptable population stability.}{fig:psi}
+
 
 \subsection{Characteristic Stability Index (CSI)}
 

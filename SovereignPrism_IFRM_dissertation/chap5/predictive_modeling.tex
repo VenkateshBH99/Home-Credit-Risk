@@ -93,19 +93,11 @@ LightGBM & 0.70 & 0.66 & 0.74 & 1,726 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_confusion_matrix_2.png}
-    \caption{Confusion matrix for the Logistic Regression baseline on the traditional dataset. The balanced class weighting produces approximately equal true positive and true negative rates at the cost of overall accuracy.}
-    \label{fig:traditional_lr_cm}
-\end{figure}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_visualize_confusion_matrix_2.png}{Traditional LR Confusion Matrix}{Confusion matrix for the Logistic Regression baseline on the traditional dataset. The balanced class weighting produces approximately equal true positive and true negative rates at the cost of overall accuracy.}{fig:traditional_lr_cm}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_confusion_matrix_and_9.png}
-    \caption{Confusion matrices for Random Forest and XGBoost on the traditional dataset. Tree-based models show higher accuracy but lower recall compared to balanced Logistic Regression.}
-    \label{fig:traditional_tree_cm}
-\end{figure}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_visualize_confusion_matrix_and_9.png}{Traditional Tree Confusion}{Confusion matrices for Random Forest and XGBoost on the traditional dataset. Tree-based models show higher accuracy but lower recall compared to balanced Logistic Regression.}{fig:traditional_tree_cm}
+
 
 Key findings from the traditional dataset experiments:
 
@@ -116,33 +108,17 @@ Key findings from the traditional dataset experiments:
     \item Logistic Regression is unaffected by PCA (AUC remains 0.75), consistent with its linear nature---PCA preserves the linear signal while merely rotating the coordinate system.
 \end{enumerate}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_top_features_1.png}
-    \caption{Top features for Logistic Regression on the traditional dataset. EXT\_SOURCE variables dominate, followed by age-related and financial ratio features.}
-    \label{fig:traditional_top_features_lr}
-\end{figure}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_visualize_top_features_1.png}{Traditional LR Features}{Top features for Logistic Regression on the traditional dataset. EXT\_SOURCE variables dominate, followed by age-related and financial ratio features.}{fig:traditional_top_features_lr}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_top_20_features_5.png}
-    \caption{Top 20 features for Random Forest on the traditional dataset, ranked by impurity-based importance.}
-    \label{fig:traditional_top_features_rf}
-\end{figure}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_top_20_features_8.png}
-    \caption{Top 20 features for XGBoost on the traditional dataset. XGBoost's feature importance ranking shows strong agreement with Random Forest on the top features.}
-    \label{fig:traditional_top_features_xgb}
-\end{figure}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_visualize_top_20_features_5.png}{Traditional RF Features}{Top 20 features for Random Forest on the traditional dataset, ranked by impurity-based importance.}{fig:traditional_top_features_rf}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/final_traditional_visualize_top_20_features_12.png}
-    \caption{Top 20 features for LightGBM on the traditional dataset. The leaf-wise growth strategy produces a slightly different feature ranking, with temporal and contextual features gaining relative importance.}
-    \label{fig:traditional_top_features_lgbm}
-\end{figure}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_visualize_top_20_features_8.png}{Traditional XGBoost Features}{Top 20 features for XGBoost on the traditional dataset. XGBoost's feature importance ranking shows strong agreement with Random Forest on the top features.}{fig:traditional_top_features_xgb}
+
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_visualize_top_20_features_12.png}{Traditional LightGBM Features}{Top 20 features for LightGBM on the traditional dataset. The leaf-wise growth strategy produces a slightly different feature ranking, with temporal and contextual features gaining relative importance.}{fig:traditional_top_features_lgbm}
+
 
 \section{Combined Dataset Results}
 \label{sec:combined_results}
@@ -170,12 +146,8 @@ LightGBM & 0.80 & 0.56 & 0.78 & 1,639 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{discussion/confusionmatrices - combined no pca.png}
-    \caption{Confusion matrices for all four models on the combined dataset without PCA. The accuracy--recall trade-off is clearly visible: XGBoost achieves 86\% accuracy but only 38\% recall, while Logistic Regression achieves 69\% accuracy with 69\% recall.}
-    \label{fig:combined_confusion_matrices}
-\end{figure}
+\ProjectFigure[!htbp][width=0.85\textwidth]{discussion/confusionmatrices - combined no pca.png}{Combined Confusion Matrices}{Confusion matrices for all four models on the combined dataset without PCA. The accuracy--recall trade-off is clearly visible: XGBoost achieves 86\% accuracy but only 38\% recall, while Logistic Regression achieves 69\% accuracy with 69\% recall.}{fig:combined_confusion_matrices}
+
 
 Key findings from the combined dataset experiments:
 
@@ -191,12 +163,27 @@ Key findings from the combined dataset experiments:
 
 The combined dataset (incorporating behavioural data from all supplementary tables) improves AUC from 0.76 to 0.78 for LightGBM with undersampling---a 2.6\% relative uplift over the application-only baseline. This directly answers the central research question: \textbf{alternative data does provide meaningful improvement for default prediction}.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{discussion/N-features and Gini for various trained models.png}
-    \caption{Number of features and Gini coefficient across all trained model variants. The chart shows how feature count and discriminatory power vary across dataset variants and model families.}
-    \label{fig:n_features_gini}
-\end{figure}
+\begin{table}[H]
+\centering
+\caption{Feature Count and Gini Across Trained Model Variants}
+\label{tab:n_features_gini}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Model Variant} & \textbf{AUC} & \textbf{Brier} & \textbf{N\_Features} & \textbf{Gini} \\
+\midrule
+Ensemble\_Weighted & 0.7846 & 0.1669 & 205 & 0.5691 \\
+Ensemble\_Avg & 0.7828 & 0.1735 & 205 & 0.5655 \\
+XGBoost & 0.7826 & 0.1617 & 205 & 0.5653 \\
+LightGBM & 0.7826 & 0.1704 & 205 & 0.5652 \\
+LR\_PCA & 0.7565 & 0.2002 & 98 & 0.5131 \\
+LR\_Scorecard & 0.7544 & 0.2009 & 70 & 0.5088 \\
+A-Score (Application) & 0.7156 & 0.0734 & 170 & 0.4313 \\
+Bureau Score & 0.6218 & 0.0743 & 30 & 0.2436 \\
+B-Score (Behavioral) & 0.6159 & 0.0744 & 34 & 0.2318 \\
+C-Score (Collection) & 0.5792 & 0.0745 & 13 & 0.1584 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 However, the improvement comes with important nuances:
 
@@ -265,26 +252,14 @@ XGBoost & 0.77 & 0.68 & 0.54 & Combined & Undersampling \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/home_credit_modeling_combined_12_model_comparison_evaluation_13.png}
-    \caption{Model comparison evaluation showing ROC curves and performance metrics across all model families on the combined dataset.}
-    \label{fig:model_comparison_eval}
-\end{figure}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_modeling_combined_12_model_comparison_evaluation_13.png}{Model Comparison Curves}{Model comparison evaluation showing ROC curves and performance metrics across all model families on the combined dataset.}{fig:model_comparison_eval}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{venky/roc_curve_champion_model.png}
-    \caption{ROC curve for the champion LightGBM model (AUC = 0.78). The curve shows good separation from the diagonal, with performance particularly strong in the low false-positive-rate region most relevant for credit scoring.}
-    \label{fig:roc_champion}
-\end{figure}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{venky/precision_recall_curve.png}
-    \caption{Precision-Recall curve for the champion model. In the imbalanced credit risk setting, the PR curve provides a more informative view than the ROC curve, as it is not inflated by the large number of true negatives~\cite{saito2015}.}
-    \label{fig:pr_curve}
-\end{figure}
+\ProjectFigure[!htbp][width=0.85\textwidth]{venky/roc_curve_champion_model.png}{Champion ROC Curve}{ROC curve for the champion LightGBM model (AUC = 0.78). The curve shows good separation from the diagonal, with performance particularly strong in the low false-positive-rate region most relevant for credit scoring.}{fig:roc_champion}
+
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{venky/precision_recall_curve.png}{Champion PR Curve}{Precision-Recall curve for the champion model. In the imbalanced credit risk setting, the PR curve provides a more informative view than the ROC curve, as it is not inflated by the large number of true negatives~\cite{saito2015}.}{fig:pr_curve}
+
 
 \subsection{Champion Model Selection}
 

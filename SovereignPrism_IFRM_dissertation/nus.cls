@@ -33,11 +33,23 @@
 \defaultfontfeatures{Ligatures=TeX, Scale=MatchLowercase}
 
 % Palatino-like main font
-\setmainfont{TeX Gyre Pagella}
+\IfFontExistsTF{TeX Gyre Pagella}{%
+  \setmainfont{TeX Gyre Pagella}%
+}{%
+  \setmainfont{Latin Modern Roman}%
+}
 % Lato sans (works via fontspec if installed by TeX Live)
-\setsansfont{Lato}
+\IfFontExistsTF{Lato}{%
+  \setsansfont{Lato}%
+}{%
+  \setsansfont{Latin Modern Sans}%
+}
 % Monospace
-\setmonofont{Consolas}
+\IfFontExistsTF{Consolas}{%
+  \setmonofont{Consolas}%
+}{%
+  \setmonofont{Latin Modern Mono}%
+}
 
 % ===== Languages =====
 \RequirePackage[english]{babel} % OK with LuaLaTeX;
