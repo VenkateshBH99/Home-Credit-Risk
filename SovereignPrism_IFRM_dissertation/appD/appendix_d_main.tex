@@ -5,24 +5,18 @@ This appendix contains additional figures from the exploratory data analysis and
 
 \section{EDA Supplementary Figures}
 
-% TODO: Insert selected notebook_images/ figures here, organised by analysis type
-% e.g., categorical distributions, bivariate scatter plots, bureau analysis details
+The main chapters retain only the highest-signal EDA figures. Lower-value repeats and diagnostic variants are intentionally omitted here unless they add interpretive depth beyond the final narrative.
 
 \section{Modelling Supplementary Figures}
 
-% TODO: Insert selected notebook_images/ figures showing:
-% - confusion matrices for all model variants
-% - SHAP beeswarm plots for all models
-% - feature importance bar charts
-% - ROC and PR curves
+\ProjectFigure[!htbp][width=0.85\textwidth]{discussion/our KS plot analysis.png}{Detailed KS Plot}{Detailed KS plot analysis showing the cumulative distribution functions for defaulters and non-defaulters, with the maximum KS separation point annotated.}{fig:ks_analysis_appendix}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{venky/calibration_curve_predicted_vs_actual.png}{Detailed Calibration Curve}{Calibration curve (predicted versus actual default rate). The systematic underprediction at higher predicted probabilities is visible as the curve falls below the ideal diagonal.}{fig:calibration_curve_appendix}
 
 \section{Discussion and Design Decision Figures}
 
-% TODO: Insert discussion images showing design decision rationales
-% e.g., N-features and Gini for various models, confusion matrices, EXT_SOURCE analysis
+This appendix section is reserved for design-decision screenshots and workshop artifacts that informed the report, but were intentionally converted into native tables or prose in the final manuscript.
 
 \section{Venky's EDA Report Figures}
 
-% TODO: Insert venkyreportimages/ figures
-% Target distribution, correlation heatmap, external source distributions,
-% education vs default, occupation analysis, WoE plots, PCA, SHAP, fairness
+The most useful figures from Venky's report have been integrated directly into the main body where they support a specific argument. The remaining artifacts were either duplicates, miscaptioned inserts, or secondary variants of figures already retained elsewhere.

@@ -729,7 +729,7 @@ The dissertation now has full prose content with ~60 integrated figures across a
 
 
 
-
+# my prompt to codex
 okay now claude has helped me write the major core of the dissertatino which is present at /Users/SamarthSoni/Projects/Home-Credit-Risk/SovereignPrism_IFRM_dissertation
 
 Now, i need you to read the history fo what was planned and done at /Users/SamarthSoni/Projects/Home-Credit-Risk/CLAUDE.md & /Users/SamarthSoni/Projects/Home-Credit-Risk/dissertation.md
@@ -787,3 +787,62 @@ Figure 7.6: SHAP bar plot (left) and beeswarm plot (right) for XGBoost on the tr
 Figure 7.8: SHAP bar plot (left) and beeswarm plot (right) for LightGBM on the traditional dataset.The beeswarm reveals clear directional eﬀects: higher EXT_SOURCE values push toward non-default(left), while younger age pushes toward default (right). [HERE, THE RIGHT SIDE PLOT NEEDS TO BE REMOVED SINCE IT IS BEING REPEATED FROM EARLIER FIGURE 7.7 (INCORPORATE THE DESCRIPTIONS WHERE NECESSARY IN THE TEXT OR PREVIOUS IMAGE DESCRIPTION), THE LEFT ONE IS OK]
 
 For these images tasks since there are so much to do, i would recommend that you make a table/csv of sorts so you can track across vairous images and dont get lost or dont end up hallucinating. THing about this structurally and holistically. Also, now that i have shared with you which images are duplicates of each other and i have also shared which ones to choose based on visual inspection, you can also safely delete them from the repo so that later on we dont get confused, in the same step where yo will add the border to their sharper counterparts. then after making the structured plan i recommend you go throug it one by one step after step so that everything is slowly solved.
+
+feedback from teammates-
+Explanations for all can be shortened 
+Chapter 2 shorten it
+
+
+Can yo include some abbreviations as well like SHAP, A/B/C score etc?  Need more citations and abbreviations. Also refer to the final ppt .md because at the end there we have a few helpful links which we can also add to this report.
+
+also, can we add the black border to ALL images? In addition these are soem specific cases that need to be fixed:
+Figure 1.1: Overall model architecture showing the flow from raw data sources through feature engineering, model training, and evaluation ==> it shld be 1.5.2 methodology scope section not interleaved within stakeholder analysis.
+And then Figure 1.2: Banking & Financial Partners – key concerns include profitability, customer trust, and data privacy. , Figure 1.3: Credit Bureau Companies – key concerns include ROI, integration complexity, and strategic fit. , Figure 1.4: Regulators & Governments – key concerns include risk exposure, data governance, and model fairness. shld all be side by side in one row, so shorten their size, and then each of their descriptions should also be directly below respective images themselves. and then this set of images shld we within the 1.6 stakeholder analysis section where currently figure 1.1. is, not interleaved within 1.7 report organisatoin section
+Figure 3.24: Missing value patterns for external source variables. The diﬀerential missingness rates support the inter-pretation of each score as originating from distinct data providers with varying coverage. ==> convert this to its constituent text also
+Figure D.2: Calibration curve (predicted versus actual default rate). The systematic underprediction at higher predicted
+probabilities is visible as the curve falls below the ideal diagonal. ==> this is actualy a graph of POS cash with contract status distribution and DPD distribution for NAME_CONTRACT_STATUS - where w=shold this be put instead of appendix?
+Figure D.1: Detailed KS plot analysis showing the cumulative distribution functions for defaulters and non-defaulters,with the maximum KS separation point annotated. ==> in this one, do OCR and extract the necessary KS related information, and put it into the report text itself if havent covered this KS related section 6.3.1 ks statistic
+Figure 6.6: Expected loss estimation across risk deciles. The top decile accounts for a disproportionate share of total
+portfolio expected loss, validating the model’s risk concentration ability. ==> this graph is blank, we need to remove it. Did claude hallucinate its subject description?
+Figure 6.7: Profit curve showing total portfolio profit as a function of the classification threshold. The optimal threshold(maximising profit) is substantially lower than the default 0.5, reflecting the asymmetric cost of missed defaults versusfalse rejections. ==> this graph is blank, we need to remove it. Did claude hallucinate its subject description?
+Figure 3.26: Feature correlation heatmap highlighting the relationships between key predictors and the target variable.Multicollinearity among financial features (credit amount, goods price, annuity) is visible. ==> this one can we regenerate/replot it in a way that all features are not huddled up on one side of the y axis, maybe we can have alternate like one feature on left side then one of the right side and so on. And then increase the height by a bit so that even with alternatr they arents huddled up.
+Figure 3.24: Missing value patterns for external source variables. The diﬀerential missingness rates support the inter-pretation of each score as originating from distinct data providers with varying coverage. ==> this i think is not required since it is only saying % of missing values and the table before it already covers that
+Figure 4.1: Traditional Data strategy (left) versus Combined Traditional + Alternative Data strategy (right). Thetraditional approach captures who the applicant is at the time of application; the combined approach additionallycaptures how the applicant behaves with credit over time. ==> my teammates dont like this, they say text screenshot not good, so we need to do OCR o it and convert it into a comparision kinda table
+Figure 4.2: WoE/IV feature-selection results for the combined pipeline. The overall IV distribution shows that whilemost features are individually weak, approximately 70 features exceed the usability threshold. ==> this is same as Figure 4.3: Top 30 features by information value for the traditional scorecard feature-selection workflow. The rankingreinforces the dominance of the EXT_SOURCE variables, followed by bureau exposure, employment duration, and instal-ment repayment features. but with more features, so put them one after the other. And keep Table 4.5: Information Value Interpretation Scale and remove Table 4.4: Information Value Distribution Across All Candidate Features since they're the same
+FIG 3.8 Target variable distribution showing 8.07% default rate (24,825 defaults out of 307,511 applications). The1:11.4 class ratio necessitates specialised handling during model training. -- MAKE IT SMALLER
+discussion/dbs says credit score depends on financial behaviour history.png ==> do ocr on this and bake this text into the report itself with bold and cite dbs as saying this.
+discussion/we used AdverserialDebiasing.png ==> do ocr on this and bake this text into the report itself with bold
+notebook/home_credit_modeling_combined_e53935_4caf50_1976d2_17.png ==> this is a "before vs after calibation" plot and i think we can include it just below the other image in the current KS metrics section
+
+These images DONT need a border since they already have one (so draw border aroud all but these)
+Figure 1.1: Overall model architecture showing the flow from raw data sources through feature engineering, modeltraining, and evaluation.
+Figure 1.3: Credit Bureau Companies – key concerns include ROI, integration complexity, and strategic fit.
+Figure 1.4: Regulators & Governments – key concerns include risk exposure, data governance, and model fairness.
+Figure 3.17: Distribution of key financial features by default status. Defaulters (orange) show slightly lower medians with wider outlier ranges, but substantial overlap between classes limits individual discriminatory power. [ACTUALLY HERE I SPECIFICALLY TOLD YOU TO TAKE THE OTHER ONE BUT YOU TOOK THIS, TAKE ITS DUPLICATE BUT MORE PRECISE ONE notebook/home_credit_eda_6_univariate_analysis_numerica_11.png AND THEN DO DRAW A BORDER AROUND THAT]
+Figure 3.22: External Source Score distributions by default status. All three scores show clear separation betweendefaulters and non-defaulters, with defaulters concentrated in the lower score ranges. [SAME AS ABOVE, TAKE ITS DUPLICATE BUT MORE PRECISE ONE AND THEN WHICH I THINK YO DELETED SO I'VE copied it back to notebook/home_credit_eda_7_external_source_features_mos_14.png  DO DRAW A BORDER AROUND THAT]
+Figure 6.5: Model validation diagnostics: KS plot (left), calibration curve (centre), and lift chart by risk decile (right).The KS of 0.428 and 3.74× top-decile lift confirm strong discriminatory power. [SAME AS ABOVE, TAKE ITS DUPLICATE BUT MORE PRECISE ONE  notebook/home_credit_modeling_combined_ks_plot_15.png AND THEN DO DRAW A BORDER AROUND THAT]
+Figure 3.34: Predictive power contribution by data source. Application data provides the baseline, while bureau and behavioural tables each contribute incremental predictive signal, totalling approximately 3.1% AUC uplift.
+Figure 4.2: WoE/IV feature-selection results for the combined pipeline. The overall IV distribution shows that whilemost features are individually weak, approximately 70 features exceed the usability threshold.
+Figure 4.4: Correlation matrix of key features showing multicollinearity patterns. Notable pairs include AMT_CRED-IT/AMT_GOODS_PRICE (r = 0.987) and AMT_CREDIT/AMT_ANNUITY (r = 0.770). ==> replace this image with discussion/Credit_Card_Balance_correlation_matrix_key.png this one instead and delete the current one for clarity, both are correlations but latter seems better
+Figure 6.1: Score distribution by default status on the validation set. Defaulters (red) are concentrated in lower scoreranges while non-defaulters (blue) cluster in higher ranges, confirming genuine predictive separation.;Figure 6.2: Default rate by score band on the validation set. A clear monotonic decrease in default rate as scoresincrease validates the scorecard’s risk-ranking ability. ==> replace both these with the single plot notebook/home_credit_modeling_combined_1976d2_label_non_default_densi_11.png
+
+
+
+The images we havent taken, i eviewed and of those i think these ones we can consider taking still (we can put them in the last section supplementary figures within discussion and design decision figures):
+discussion/EXT_SOURCE relationship with installment history? answer - NO.png ==> treat like normal image add border
+discussion/InterchangeableLogicSummaryTable.jpeg + discussion/ReflectionSummaryTable.png + discussion/TradeoffSummary.jpeg ==> do OCR and put as a table in modelling supplementary figures
+notebook/home_credit_modeling_combined__5.png ; notebook/home_credit_modeling_combined__6.png ==> add these to D.1 ie further EDA plots one
+notebook/home_credit_modeling_combined__21.png ==> this is about shap dependence between lightgbm and xgboost
+
+Also, i see this across all tables that whenever there is text in monotext ie code format, if the length is long it bleeds into the next column on the same line rather than being wrapped. Why does this happen and can we fix this? also IMPORTANTLY, make a border around ALL tables in the pdf . AND FIX TABLES COLUMN BLEEDING, which is see is happening in the monospaced ones
+
+penultimate, add a table for individual contribution on the second page wherever it seems most appropriate. leave the actual tasks columns place-holdered, like kaushik-task, sandesh-task, and so on -- we'll fill it in later. Also just below it, keep a image reference to an image called "finalGantt.png" - it will currently render as blank, and i'll put in the actual image later.
+
+Lastly, i feel the images are not properly organised ,maybe whatever yo tried doing to fit as many images within a pag as you can per my last instruction jumbled everything up - so dont do that, keep the images and tables and text in regular lined order without any complexity. THen i will tell yo specific pages where the image is bleeding to next page when it shldnt so we can reduce the size of those special cases.
+
+finally, in the section A Project proposal , the original proposal is now present at 'Group 2 Project Proposal_Team Sovereign Prism.pdf' so can yu please inlay it into the latex document? it has 6 pages so inlay the first two side by side on the first page which has lesser space due to saying "the original project proposal...project", then the next four on the next page, i am assuming 4 A4 pages inlayed into a single one here would be space optimal and large enough to be readable hopefully.  And to enable you to not forget, go through this prompt twice to understand all the list of tasks yo need to do, like the addition of more abbreviations etc as well.  Think deeply and plan.
+
+![quant skills curriculum](image.png)
+![statistical arbitrare - reverse + forward + p-value](image.png)
+![35 mentors of wsq](image-2.png)
+![internal quant advisors](image-3.png)

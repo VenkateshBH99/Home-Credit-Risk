@@ -10,11 +10,19 @@
 \RequirePackage{placeins}		       % To use \FloatBarrier
 
 \documentclass[oneside]{nus}  % custom National University of Singapore project/dissertation/thesis
-\usepackage[a4paper,margin=1in,heightrounded]{geometry} %control margins explicitly
+\usepackage[
+  a4paper,
+  left=0.55in,
+  right=0.55in,
+  top=0.52in,
+  bottom=0.48in,
+  includeheadfoot,
+  headsep=10pt,
+  footskip=18pt,
+  heightrounded
+]{geometry}
 
 %% **************** (Your) Packages (Start) ******************
-
-\usepackage{blindtext} %% for some dummy text, remove in your writeup
 
 % ---------- Listings + Code fonts ----------
 \usepackage[T1]{fontenc}
@@ -22,15 +30,17 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{enumitem}
-\usepackage{graphicx}
 \usepackage{url}
 \usepackage{tikz} %to draw figures
 \usetikzlibrary{arrows.meta,positioning,fit,shadows.blur,calc}
 \usepackage{adjustbox}
 \usepackage{caption}
 \usepackage[most]{tcolorbox}
-\usepackage{hyperref}
 \usepackage{float}
+\usepackage{xparse}
+\definecolor{MidnightBlue}{RGB}{25,25,112}
+\definecolor{DarkGreen}{RGB}{0,100,0}
+\definecolor{RoyalBlue}{RGB}{65,105,225}
 
 % Biblatex setup - numeric citation style
 \usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
@@ -103,14 +113,74 @@
 
 \usepackage{lmodern} %latin modern
 \usepackage{graphicx}
-\usepackage{float}       % for [H] exact placement
 \usepackage{booktabs}    % nicer tables
 \usepackage{tabularx}    % auto-width tables
-\usepackage{caption}
+\usepackage{longtable}
+\usepackage{array}
 \usepackage{pdfpages}
 
 \captionsetup{font=small,labelfont=bf}
 \renewcommand{\arraystretch}{1.15}
+\setlength{\headsep}{10pt}
+\setlength{\footskip}{18pt}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\captionsetup{skip=6pt}
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.8}
+\setcounter{topnumber}{4}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{6}
+\urlstyle{same}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=MidnightBlue,
+  citecolor=DarkGreen,
+  urlcolor=RoyalBlue,
+  pdfborder={0 0 0}
+}
+
+\newcommand{\SPFigureHeight}{0.72\textheight}
+\newcommand{\SPFigureFrameSep}{0.8pt}
+
+\NewDocumentCommand{\ProjectFigure}{s O{!htbp} O{width=0.88\linewidth} m m m m}{%
+  \begin{figure}[#2]
+    \centering
+    \IfBooleanTF{#1}{%
+      \begingroup
+      \setlength{\fboxsep}{\SPFigureFrameSep}%
+      \fcolorbox{black}{white}{\adjustimage{max totalsize={0.96\linewidth}{\SPFigureHeight},center,#3}{#4}}%
+      \endgroup
+    }{%
+      \adjustimage{max totalsize={0.96\linewidth}{\SPFigureHeight},center,#3}{#4}%
+    }%
+    \caption[#5]{#6}
+    \label{#7}
+  \end{figure}
+}
+
+\NewDocumentCommand{\ProjectTwoFigure}{s O{!htbp} O{width=0.46\linewidth} O{width=0.46\linewidth} m m m m m}{%
+  \begin{figure}[#2]
+    \centering
+    \IfBooleanTF{#1}{%
+      \begingroup
+      \setlength{\fboxsep}{\SPFigureFrameSep}%
+      \fcolorbox{black}{white}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#3}{#5}}%
+      \hfill
+      \fcolorbox{black}{white}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#4}{#6}}%
+      \endgroup
+    }{%
+      \adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#3}{#5}%
+      \hfill
+      \adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#4}{#6}%
+    }%
+    \caption[#7]{#8}
+    \label{#9}
+  \end{figure}
+}
 %% ********* (Your) Document Settings (End) **************
 
 

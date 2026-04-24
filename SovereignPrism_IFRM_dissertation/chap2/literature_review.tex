@@ -157,12 +157,8 @@ For imbalanced datasets, the Precision-Recall (PR) curve is often more informati
 
 In this project, AUC-ROC is used as the primary comparison metric (consistent with the Kaggle competition and industry practice), while PR curves are used as supplementary diagnostics to assess minority-class performance.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{discussion/PRvROC.jpeg}
-    \caption{Comparison of ROC and Precision-Recall curves. The ROC curve (right) shows the trade-off between true positive rate and false positive rate; the PR curve (left) focuses on minority class performance.}
-    \label{fig:pr_vs_roc}
-\end{figure}
+\ProjectFigure[!htbp][width=0.5\textwidth]{discussion/PRvROC.jpeg}{ROC vs PR Curves}{Comparison of ROC and Precision-Recall curves. The ROC curve (right) shows the trade-off between true positive rate and false positive rate; the PR curve (left) focuses on minority class performance.}{fig:pr_vs_roc}
+
 
 \subsection{KS Statistic, Gini, Calibration, and Lift}
 

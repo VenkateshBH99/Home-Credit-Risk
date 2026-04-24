@@ -23,12 +23,8 @@ Every 20-point increase in the score doubles the applicant's creditworthiness od
 
 \subsection{Score Distribution and Validation}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{pptx/customer risk scoring validatoin results - score distribution by default status.png}
-    \caption{Score distribution by default status on the validation set. Defaulters (red) are concentrated in lower score ranges while non-defaulters (blue) cluster in higher ranges, confirming genuine predictive separation.}
-    \label{fig:score_dist}
-\end{figure}
+\ProjectFigure[!htbp][width=0.8\textwidth]{pptx/customer risk scoring validatoin results - score distribution by default status.png}{Score Distribution}{Score distribution by default status on the validation set. Defaulters (red) are concentrated in lower score ranges while non-defaulters (blue) cluster in higher ranges, confirming genuine predictive separation.}{fig:score_dist}
+
 
 The score distribution shows clear separation between defaulters and non-defaulters, confirming the scorecard's predictive power. Every score shown is computed on the validation set---a separate group of applicants the model never saw during training. The overlap zone between the two distributions (approximately 450--600) represents the segment where automated decisions are least reliable and human-in-the-loop review is recommended.
 
@@ -53,12 +49,8 @@ The score distribution shows clear separation between defaulters and non-default
 
 Applicants in the lowest score band (300--436) are approximately 20$\times$ more likely to default than those in the highest band (741--850). This risk gradient demonstrates the scorecard's practical utility for tiered lending decisions.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{pptx/customer risk scoring validatoin results - default rate by score band.png}
-    \caption{Default rate by score band on the validation set. A clear monotonic decrease in default rate as scores increase validates the scorecard's risk-ranking ability.}
-    \label{fig:default_by_band}
-\end{figure}
+\ProjectFigure[!htbp][width=0.7\textwidth]{pptx/customer risk scoring validatoin results - default rate by score band.png}{Default Rate by Band}{Default rate by score band on the validation set. A clear monotonic decrease in default rate as scores increase validates the scorecard's risk-ranking ability.}{fig:default_by_band}
+
 
 \section{A-Score / B-Score / C-Score Framework}
 \label{sec:abc_framework}
@@ -67,15 +59,30 @@ Beyond the single origination scorecard, the project implements a complete credi
 
 \begin{table}[H]
 \centering
-\caption{A/B/C Score Framework: Lifecycle-Based Credit Scoring System}
-\label{tab:abc_scores}
-\begin{tabular}{p{1.5cm}p{2cm}p{3cm}p{1.5cm}p{2.5cm}p{3cm}}
+\caption{A/B/C Score Architecture}
+\label{tab:abc_architecture}
+\begin{tabular}{p{1.8cm}p{2.4cm}p{5cm}p{4.3cm}}
 \toprule
-\textbf{Score} & \textbf{When?} & \textbf{Data} & \textbf{AUC} & \textbf{Purpose} & \textbf{Top Features} \\
+\textbf{Score} & \textbf{Scope} & \textbf{Data Sources} & \textbf{Purpose} \\
 \midrule
-A-Score & At application & Application + Bureau (170 features) & 0.716 & Approve/decline & EXT\_SOURCE\_2, EXT\_SOURCE\_1, EXT\_SOURCE\_3, EDUCATION, DAYS\_BIRTH \\
-B-Score & Post-origination & POS/Instalment/CC behaviour (34 features) & 0.616 & Portfolio monitoring & pos\_installments\_left, pos\_months\_total, ins\_late\_ratio \\
-C-Score & Delinquent accounts & DPD patterns, overdue amounts (13 features) & 0.579 & Collection priority & ins\_late\_ratio, bur\_amt\_overdue, pos\_dpd\_mean \\
+A-Score (Application) & At origination & \texttt{application\_train} only: demographics, income, employment, housing, and \texttt{EXT\_SOURCE} variables & First-line decisioning for all applicants, including new-to-bureau cases \\
+B-Score (Behavioral) & Post-origination & \texttt{POS\_CASH\_balance} + \texttt{installments\_payments} + \texttt{credit\_card\_balance} & Portfolio monitoring, limit management, and early-warning detection \\
+C-Score (Collection) & Delinquent accounts & Overdue patterns from instalments, DPD from POS/credit-card balance, and collection-stage features & Recovery prioritisation and write-off prediction \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Auxiliary Score Overlays}
+\label{tab:auxiliary_scores}
+\begin{tabular}{p{2.5cm}p{5cm}p{5.2cm}}
+\toprule
+\textbf{Score} & \textbf{Data} & \textbf{Use Case} \\
+\midrule
+Bureau Score & \texttt{bureau.csv} + \texttt{bureau\_balance.csv} & External credit behaviour overlay on the A-Score \\
+Fraud Score & Document flags, address mismatches, phone flags, application velocity & Pre-screening before full credit assessment \\
+Propensity Score & \texttt{previous\_application.csv} approval and rejection history & Likelihood to accept an offer and downstream marketing optimisation \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -92,20 +99,11 @@ The A-score performs best (AUC = 0.716) because it has access to the richest fea
 
 The feature subsets are intentionally disjoint: A-score uses application-time features, B-score uses post-origination behavioural features, and C-score uses delinquency indicators. This separation ensures each score answers a distinct business question without feature leakage across lifecycle stages.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.45\textwidth]{pptx/ABC framework - avg credit card balance over days past due.png}
-    \includegraphics[width=0.45\textwidth]{pptx/ABC framework - avg remaining installments over days past due.png}
-    \caption{Behavioural signals used in B-Score and C-Score construction. Left: Average credit card balance increases with days past due. Right: Average remaining instalment count is higher for delinquent accounts, suggesting that longer-term loans are more vulnerable.}
-    \label{fig:abc_signals}
-\end{figure}
+\ProjectTwoFigure[!htbp][width=0.45\textwidth][width=0.45\textwidth]{pptx/ABC framework - avg credit card balance over days past due.png}{pptx/ABC framework - avg remaining installments over days past due.png}{B-Score/C-Score Signals}{Behavioural signals used in B-Score and C-Score construction. Left: Average credit card balance increases with days past due. Right: Average remaining instalment count is higher for delinquent accounts, suggesting that longer-term loans are more vulnerable.}{fig:abc_signals}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{discussion/ABC scores AUC+top features.png}
-    \caption{A/B/C score AUC comparison and top features for each score type. The declining AUC from A to C reflects the decreasing richness of available features at each lifecycle stage.}
-    \label{fig:abc_auc_features}
-\end{figure}
+
+\ProjectFigure[!htbp][width=0.85\textwidth]{discussion/ABC scores AUC+top features.png}{A B C Score Comparison}{A/B/C score AUC comparison and top features for each score type. The declining AUC from A to C reflects the decreasing richness of available features at each lifecycle stage.}{fig:abc_auc_features}
+
 
 \section{Model Validation Diagnostics}
 \label{sec:validation_diagnostics}
@@ -124,33 +122,10 @@ The calibration curve plots predicted probabilities against observed default rat
 
 The lift chart quantifies how much better the model performs compared to random selection in each risk decile. The champion model achieves a 3.74$\times$ lift in the top decile, meaning the riskiest 10\% of applicants (as identified by the model) are 3.74 times more likely to default than the portfolio average. This concentration of risk in the top decile enables collections and credit review teams to focus attention on a small subset of accounts for disproportionate value capture.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{pptx/KS score metrics - KS plot, calibration curve, lift chart by risk decile.png}
-    \caption{Model validation diagnostics: KS plot (left), calibration curve (centre), and lift chart by risk decile (right). The KS of 0.428 and 3.74$\times$ top-decile lift confirm strong discriminatory power.}
-    \label{fig:ks_cal_lift}
-\end{figure}
+\ProjectFigure[!htbp][width=0.9\textwidth]{pptx/KS score metrics - KS plot, calibration curve, lift chart by risk decile.png}{KS Calibration Lift}{Model validation diagnostics: KS plot (left), calibration curve (centre), and lift chart by risk decile (right). The KS of 0.428 and 3.74$\times$ top-decile lift confirm strong discriminatory power.}{fig:ks_cal_lift}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{discussion/ks + calibration + lift plots.png}
-    \caption{Extended validation diagnostics from the design discussion, showing the KS plot with threshold annotation, the calibration curve with the ideal diagonal, and the decile-level lift analysis.}
-    \label{fig:ks_cal_lift_discussion}
-\end{figure}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{discussion/our KS plot analysis.png}
-    \caption{Detailed KS plot analysis showing the cumulative distribution functions for defaulters and non-defaulters, with the maximum KS separation point annotated.}
-    \label{fig:ks_analysis}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{venky/calibration_curve_predicted_vs_actual.png}
-    \caption{Calibration curve (predicted vs actual default rate). The systematic underprediction at higher predicted probabilities is visible as the curve falls below the ideal diagonal.}
-    \label{fig:calibration_curve}
-\end{figure}
+The supplementary appendix retains the detailed KS-only and calibration-only plots for readers who want a more granular view of the validation diagnostics without interrupting the main flow of the business-scoring narrative.
 
 \section{Expected Loss and Threshold Optimisation}
 \label{sec:expected_loss}
@@ -173,12 +148,8 @@ where:
 
 Portfolio-level expected loss summaries were computed by risk band, and concentration curves were generated to identify risk clusters. The top risk decile accounts for a disproportionate share of portfolio expected loss, confirming the lift chart findings and validating the scorecard's ability to concentrate risk identification.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/home_credit_modeling_combined_16_expected_loss_estimation_el_30.png}
-    \caption{Expected loss estimation across risk deciles. The top decile accounts for a disproportionate share of total portfolio expected loss, validating the model's risk concentration ability.}
-    \label{fig:expected_loss}
-\end{figure}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_modeling_combined_16_expected_loss_estimation_el_30.png}{Expected Loss by Decile}{Expected loss estimation across risk deciles. The top decile accounts for a disproportionate share of total portfolio expected loss, validating the model's risk concentration ability.}{fig:expected_loss}
+
 
 \subsection{Cost-Sensitive Threshold Optimisation}
 
@@ -186,7 +157,7 @@ The default classification threshold of 0.5 is rarely optimal for credit risk ap
 
 \begin{equation}
 \text{Total Profit} = (TN \times \text{Gain}_{\text{interest}}) - (FN \times \text{Cost}_{\text{default}}) - (FP \times \text{Cost}_{\text{admin}})
-\label{eq:profit}
+\label{eq:profit_scoring}
 \end{equation}
 
 where:
@@ -200,17 +171,13 @@ Using the cost-ratio rule with estimated costs:
 
 \begin{equation}
 \tau^* = \frac{\text{Cost}_{FP}}{\text{Cost}_{FP} + \text{Cost}_{FN}} = \frac{500}{500 + 10{,}000} \approx 0.047
-\label{eq:threshold}
+\label{eq:threshold_scoring}
 \end{equation}
 
 This extremely conservative threshold (flagging anyone with $>4.7\%$ predicted default probability) reflects the asymmetric cost structure of consumer lending: the cost of a single default (\$10,000 in lost principal and collection costs) is 20$\times$ the cost of rejecting a good borrower (\$500 in foregone interest income). In practice, the threshold would be calibrated to the institution's specific cost structure and risk appetite.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{notebook/home_credit_modeling_combined_17_profit_curve_cost_sensitive_31.png}
-    \caption{Profit curve showing total portfolio profit as a function of the classification threshold. The optimal threshold (maximising profit) is substantially lower than the default 0.5, reflecting the asymmetric cost of missed defaults versus false rejections.}
-    \label{fig:profit_curve}
-\end{figure}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_modeling_combined_17_profit_curve_cost_sensitive_31.png}{Profit Curve}{Profit curve showing total portfolio profit as a function of the classification threshold. The optimal threshold (maximising profit) is substantially lower than the default 0.5, reflecting the asymmetric cost of missed defaults versus false rejections.}{fig:profit_curve}
+
 
 \section{Reject Inference}
 \label{sec:reject_inference}
