@@ -1,22 +1,94 @@
-\chapter{Supplementary Figures}
+\chapter{Supplementary Figures and Design Artifacts}
 \label{app:supplementary_figures}
 
-This appendix contains additional figures from the exploratory data analysis and modelling notebooks that support the analysis presented in the main body of the dissertation.
+This appendix collects secondary diagnostics, additional exploratory plots, and workshop artifacts that support the main narrative without interrupting the flow of Chapters~\ref{chap:data} to~\ref{chap:fairness}. Screenshots that were miscaptioned or duplicated in earlier drafts have either been promoted into the correct chapter or converted into native tables below.
 
-\section{EDA Supplementary Figures}
+\section{EDA and Feature-Engineering Supplementary Figures}
 
-The main chapters retain only the highest-signal EDA figures. Lower-value repeats and diagnostic variants are intentionally omitted here unless they add interpretive depth beyond the final narrative.
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_modeling_combined__5.png}{PCA Scree Supplement}{Additional scree-plot diagnostic from the combined modelling notebook, showing how variance decays across principal components beyond the main PCA figures retained in Chapter~\ref{chap:feature_engineering}.}{fig:appendix_pca_scree}
 
-\section{Modelling Supplementary Figures}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_modeling_combined__6.png}{PCA Loading Supplement}{Supplementary PCA loading view highlighting which original variables dominate the leading components in the combined-data pipeline.}{fig:appendix_pca_loading}
 
-\ProjectFigure[!htbp][width=0.85\textwidth]{discussion/our KS plot analysis.png}{Detailed KS Plot}{Detailed KS plot analysis showing the cumulative distribution functions for defaulters and non-defaulters, with the maximum KS separation point annotated.}{fig:ks_analysis_appendix}
+\ProjectFigure[!htbp][width=0.85\textwidth]{discussion/EXT_SOURCE relationship with installment history? answer - NO.png}{EXT Source Independence}{Design-note figure examining whether \texttt{EXT\_SOURCE} variables are simple proxies for instalment history. The visual conclusion was negative, reinforcing the view that external scores contribute distinct signal.}{fig:appendix_ext_source_independence}
 
-\ProjectFigure[!htbp][width=0.85\textwidth]{venky/calibration_curve_predicted_vs_actual.png}{Detailed Calibration Curve}{Calibration curve (predicted versus actual default rate). The systematic underprediction at higher predicted probabilities is visible as the curve falls below the ideal diagonal.}{fig:calibration_curve_appendix}
+\FloatBarrier
 
-\section{Discussion and Design Decision Figures}
+\section{Modelling, Calibration, and Explainability Supplementary Figures}
 
-This appendix section is reserved for design-decision screenshots and workshop artifacts that informed the report, but were intentionally converted into native tables or prose in the final manuscript.
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/home_credit_modeling_combined__21.png}{SHAP Dependence Supplement}{Supplementary SHAP dependence comparison between LightGBM and XGBoost, showing how both boosting models respond to the same dominant features while differing in interaction smoothness.}{fig:appendix_shap_dependence}
 
-\section{Venky's EDA Report Figures}
+\FloatBarrier
 
-The most useful figures from Venky's report have been integrated directly into the main body where they support a specific argument. The remaining artifacts were either duplicates, miscaptioned inserts, or secondary variants of figures already retained elsewhere.
+\section{Discussion and Design-Decision Tables}
+
+The following tables transcribe workshop screenshots into editable LaTeX so the reasoning remains searchable, copy-safe, and visually consistent with the rest of the dissertation.
+
+\begin{table}[H]
+\centering
+\caption{Interchangeable Logic Summary}
+\label{tab:appendix_interchangeable_logic}
+\begin{tabular}{p{3.2cm}p{4.2cm}p{5.7cm}}
+\toprule
+\textbf{Error Pattern} & \textbf{Metrics Most Affected} & \textbf{Interpretation} \\
+\midrule
+False negatives dominate & Recall and \ac{NPV} & Missing real defaulters weakens default-catching performance and reduces confidence that predicted good accounts are truly safe. \\
+False positives dominate & Precision and specificity & Rejecting too many good customers lowers approval efficiency and reduces confidence that predicted bad accounts are truly risky. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Reflection Summary for Error Priorities}
+\label{tab:appendix_reflection_summary}
+\begin{tabular}{p{3.2cm}p{3.3cm}p{3.2cm}p{4.4cm}}
+\toprule
+\textbf{Operational Focus} & \textbf{Primary Concern} & \textbf{Metric Lens} & \textbf{Practical Reading} \\
+\midrule
+Catch actual defaulters & False negatives & Recall perspective & If the institution is default-averse, the key question is whether the model misses too many truly risky borrowers. \\
+Protect good customers & False positives & Specificity / precision perspective & If the institution is growth-oriented, the key question is whether the model rejects too many safe applicants. \\
+Portfolio reassurance & Missed-risk spillover & \ac{NPV} verdict & Useful when the business wants confidence that approved borrowers will mostly remain healthy. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Threshold Trade-off Summary}
+\label{tab:appendix_tradeoff_summary}
+\begin{tabular}{p{2.8cm}p{2.5cm}p{2.7cm}p{3.2cm}p{3.8cm}}
+\toprule
+\textbf{Policy Stance} & \textbf{Threshold} & \textbf{Philosophy} & \textbf{Metrics Favoured} & \textbf{Main Cost} \\
+\midrule
+Conservative & Lower cutoff & Safety first & Recall and \ac{NPV} & More good customers may be declined or slowed into manual review. \\
+Aggressive & Higher cutoff & Growth first & Precision and specificity & Higher downstream default rates can emerge if risky borrowers slip through. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+
+\section{Helpful External Resources}
+
+The final presentation deck also tracked external resources that informed the team's modelling choices, benchmarking, and domain framing. Table~\ref{tab:appendix_helpful_links} preserves the most relevant of those links in compact form.
+
+\begin{table}[H]
+\centering
+\caption{Helpful External Resources Referenced by the Team}
+\label{tab:appendix_helpful_links}
+\renewcommand{\arraystretch}{1.16}
+\begin{tabular}{p{3.1cm}p{2cm}p{4.1cm}p{4.3cm}}
+\toprule
+\textbf{Source} & \textbf{Type} & \textbf{How It Informed the Project} & \textbf{Reference} \\
+\midrule
+Home Credit Kaggle competition & Dataset / benchmark & Official competition framing, evaluation setup, and peer benchmark context & \href{https://www.kaggle.com/c/home-credit-default-risk}{Kaggle competition} \\
+Krak\'{o}w-Lublin-Zhabinka write-up & Kaggle solution & Benchmark for aggressive feature engineering across supplementary tables & \href{https://www.kaggle.com/competitions/home-credit-default-risk/writeups/krak-w-lublin-i-zhabinka-overview-of-the-5th-solut}{Solution write-up} \\
+Competition discussion thread & Kaggle discussion & Sanity checks on feature engineering ideas and leaderboard-era solution patterns & \href{https://www.kaggle.com/competitions/home-credit-default-risk/discussion}{Discussion board} \\
+Dhruv Narayanan Part 1 & Blog article & Business understanding, data cleaning, and EDA framing & \href{https://medium.com/analytics-vidhya/home-credit-default-risk-part-1-business-understanding-data-cleaning-and-eda-1203913e979c}{Part 1 link} \\
+Dhruv Narayanan Part 2 & Blog article & Additional feature engineering patterns and modelling workflow ideas & \href{https://medium.com/analytics-vidhya/home-credit-default-risk-part-2-feature-engineering-and-modelling-63f3c6d398a6}{Part 2 link} \\
+Dhruv Narayanan Part 3 & Blog article & Deployment-oriented framing and wrap-up lessons & \href{https://medium.com/analytics-vidhya/home-credit-default-risk-part-3-model-deployment-and-final-thoughts-4ee20abf230b}{Part 3 link} \\
+DBS credit-score explainer & Industry explainer & External business-language support for behaviour-history-based scoring rationale & Referenced in Chapter~\ref{sec:trad_vs_alt} via \cite{dbs_credit_score} \\
+IBM AI Fairness 360 & Fairness toolkit & Future-work reference for in-processing debiasing alternatives & Referenced in Chapter~\ref{chap:fairness} via \cite{aif360,adversarial_debiasing} \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -3,6 +3,8 @@
 
 \section{Repository Structure}
 
+Primary project repository: \url{https://github.com/VenkateshBH99/Home-Credit-Risk}
+
 \begin{table}[H]
 \centering
 \caption{Repository Structure}
@@ -12,17 +14,17 @@
 \toprule
 \textbf{Path} & \textbf{Role} \\
 \midrule
-\texttt{runner.ipynb} & Top-level orchestration notebook \\
-\texttt{pipelines/project\_config.py} & Central configuration (paths, constants) \\
-\texttt{pipelines/fetch\_dataset\_pipeline.py} & Raw data acquisition from Google Drive \\
-\texttt{pipelines/aggregator\_pipeline.py} & Feature engineering and split creation \\
-\texttt{pipelines/preprocessing\_pipeline.py} & Imputation, filtering, encoding, scaling, PCA \\
-\texttt{src/home\_credit\_eda.ipynb} & Full exploratory data analysis \\
-\texttt{src/home\_credit\_modeling\_combined.ipynb} & End-to-end combined-data research notebook \\
-\texttt{src/final\_traditional.ipynb} & Application-only baseline modelling \\
-\texttt{src/final\_traditional\_pca.ipynb} & Application-only PCA variant \\
-\texttt{modeling\_undersample\_fold.ipynb} & Multi-variant benchmark with undersampling \\
-\texttt{pca\_factor\_analysis.ipynb} & Statistical interpretability (PCA, factor analysis) \\
+\CodeCell{runner.ipynb} & Top-level orchestration notebook \\
+\CodeCell{pipelines/project_config.py} & Central configuration (paths, constants) \\
+\CodeCell{pipelines/fetch_dataset_pipeline.py} & Raw data acquisition from Google Drive \\
+\CodeCell{pipelines/aggregator_pipeline.py} & Feature engineering and split creation \\
+\CodeCell{pipelines/preprocessing_pipeline.py} & Imputation, filtering, encoding, scaling, PCA \\
+\CodeCell{src/home_credit_eda.ipynb} & Full exploratory data analysis \\
+\CodeCell{src/home_credit_modeling_combined.ipynb} & End-to-end combined-data research notebook \\
+\CodeCell{src/final_traditional.ipynb} & Application-only baseline modelling \\
+\CodeCell{src/final_traditional_pca.ipynb} & Application-only PCA variant \\
+\CodeCell{modeling_undersample_fold.ipynb} & Multi-variant benchmark with undersampling \\
+\CodeCell{pca_factor_analysis.ipynb} & Statistical interpretability (PCA, factor analysis) \\
 \bottomrule
 \end{tabular}
 \end{table}

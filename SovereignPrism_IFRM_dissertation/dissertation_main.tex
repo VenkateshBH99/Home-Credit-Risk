@@ -12,13 +12,13 @@
 \documentclass[oneside]{nus}  % custom National University of Singapore project/dissertation/thesis
 \usepackage[
   a4paper,
-  left=0.55in,
-  right=0.55in,
-  top=0.52in,
-  bottom=0.48in,
+  left=0.4in,
+  right=0.4in,
+  top=0.48in,
+  bottom=0.42in,
   includeheadfoot,
-  headsep=10pt,
-  footskip=18pt,
+  headsep=6pt,
+  footskip=12pt,
   heightrounded
 ]{geometry}
 
@@ -38,6 +38,8 @@
 \usepackage[most]{tcolorbox}
 \usepackage{float}
 \usepackage{xparse}
+\usepackage{ragged2e}
+\usepackage{etoolbox}
 \definecolor{MidnightBlue}{RGB}{25,25,112}
 \definecolor{DarkGreen}{RGB}{0,100,0}
 \definecolor{RoyalBlue}{RGB}{65,105,225}
@@ -117,12 +119,17 @@
 \usepackage{tabularx}    % auto-width tables
 \usepackage{longtable}
 \usepackage{array}
+\usepackage{colortbl}
 \usepackage{pdfpages}
 
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+
 \captionsetup{font=small,labelfont=bf}
+\captionsetup[figure]{font=small,labelfont=bf,textfont=bf}
+\captionsetup[table]{font=small,labelfont=bf}
 \renewcommand{\arraystretch}{1.15}
-\setlength{\headsep}{10pt}
-\setlength{\footskip}{18pt}
+\setlength{\headsep}{6pt}
+\setlength{\footskip}{12pt}
 \setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
 \setlength{\intextsep}{8pt plus 2pt minus 2pt}
 \setlength{\floatsep}{8pt plus 2pt minus 2pt}
@@ -144,18 +151,65 @@
 }
 
 \newcommand{\SPFigureHeight}{0.72\textheight}
+\newcommand{\SPGlobalImageScale}{0.9}
 \newcommand{\SPFigureFrameSep}{0.8pt}
+\newcommand{\SPTableFrameSep}{3pt}
+\newsavebox{\SPTableBox}
+
+\newcommand{\CodeCell}[1]{%
+  \parbox[t]{\linewidth}{\RaggedRight\ttfamily\small\nolinkurl{#1}}%
+}
+
+\newcommand{\ProjectOptionalGraphic}[3][width=0.95\linewidth]{%
+  \IfFileExists{#2}{%
+    \scalebox{\SPGlobalImageScale}{\includegraphics[#1]{#2}}%
+  }{%
+    \setlength{\fboxsep}{8pt}%
+    \fbox{%
+      \parbox[c][0.18\textheight][c]{0.92\linewidth}{%
+        \centering
+        \textbf{Placeholder image pending}\\[4pt]
+        #3\\[4pt]
+        \texttt{#2}%
+      }%
+    }%
+  }%
+}
+
+\newcommand{\CorrCell}[1]{%
+  \begingroup
+  \pgfmathtruncatemacro{\CorrShade}{min(100, round(abs(#1) * 100))}%
+  \ifdim #1 pt < 0pt
+    \edef\SPColorSpec{RoyalBlue!\CorrShade!white}%
+  \else
+    \edef\SPColorSpec{red!\CorrShade!white}%
+  \fi
+  \expandafter\cellcolor\expandafter{\SPColorSpec}{\scriptsize #1}%
+  \endgroup
+}
+
+\BeforeBeginEnvironment{tabular}{%
+  \begingroup
+  \setlength{\fboxsep}{\SPTableFrameSep}%
+  \setlength{\fboxrule}{0.6pt}%
+  \begin{lrbox}{\SPTableBox}%
+}
+\AfterEndEnvironment{tabular}{%
+  \end{lrbox}%
+  \fbox{\usebox{\SPTableBox}}%
+  \endgroup
+}
 
 \NewDocumentCommand{\ProjectFigure}{s O{!htbp} O{width=0.88\linewidth} m m m m}{%
   \begin{figure}[#2]
     \centering
     \IfBooleanTF{#1}{%
+      \scalebox{\SPGlobalImageScale}{\adjustimage{max totalsize={0.96\linewidth}{\SPFigureHeight},center,#3}{#4}}%
+    }{%
       \begingroup
       \setlength{\fboxsep}{\SPFigureFrameSep}%
-      \fcolorbox{black}{white}{\adjustimage{max totalsize={0.96\linewidth}{\SPFigureHeight},center,#3}{#4}}%
+      \scalebox{\SPGlobalImageScale}{\fcolorbox{black}{white}{\adjustimage{max totalsize={0.96\linewidth}{\SPFigureHeight},center,#3}{#4}}}%
       \endgroup
-    }{%
-      \adjustimage{max totalsize={0.96\linewidth}{\SPFigureHeight},center,#3}{#4}%
     }%
     \caption[#5]{#6}
     \label{#7}
@@ -166,16 +220,16 @@
   \begin{figure}[#2]
     \centering
     \IfBooleanTF{#1}{%
+      \scalebox{\SPGlobalImageScale}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#3}{#5}}%
+      \hfill
+      \scalebox{\SPGlobalImageScale}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#4}{#6}}%
+    }{%
       \begingroup
       \setlength{\fboxsep}{\SPFigureFrameSep}%
-      \fcolorbox{black}{white}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#3}{#5}}%
+      \scalebox{\SPGlobalImageScale}{\fcolorbox{black}{white}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#3}{#5}}}%
       \hfill
-      \fcolorbox{black}{white}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#4}{#6}}%
+      \scalebox{\SPGlobalImageScale}{\fcolorbox{black}{white}{\adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#4}{#6}}}%
       \endgroup
-    }{%
-      \adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#3}{#5}%
-      \hfill
-      \adjustimage{max totalsize={0.48\linewidth}{0.56\textheight},valign=t,#4}{#6}%
     }%
     \caption[#7]{#8}
     \label{#9}

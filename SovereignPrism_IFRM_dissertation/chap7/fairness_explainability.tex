@@ -4,7 +4,7 @@
 \section{SHAP Explainability}
 \label{sec:shap}
 
-SHAP (SHapley Additive exPlanations)~\cite{lundberg2017} TreeExplainer was applied to all four model families across both traditional and combined datasets, producing portfolio-level feature importance rankings and individual-level prediction explanations. SHAP values have the desirable property of being theoretically grounded in cooperative game theory: each feature's contribution to a prediction is computed as its average marginal contribution across all possible feature coalitions, ensuring consistency and local accuracy.
+\ac{SHAP}~\cite{lundberg2017} TreeExplainer was applied to all four model families across both traditional and combined datasets, producing portfolio-level feature importance rankings and individual-level prediction explanations. SHAP values have the desirable property of being theoretically grounded in cooperative game theory: each feature's contribution to a prediction is computed as its average marginal contribution across all possible feature coalitions, ensuring consistency and local accuracy.
 
 \subsection{Traditional vs Combined SHAP Comparison}
 
@@ -17,17 +17,17 @@ The SHAP analysis was conducted for each model family on both the traditional (a
 
 In the traditional dataset, a few features---especially \texttt{DAYS\_EMPLOYED}, income type, \texttt{AMT\_CREDIT}, and the \texttt{EXT\_SOURCE} variables---explain most of the variation in predicted default risk. The concentration of importance in a small number of features is characteristic of linear models, which allocate predictive weight through a single coefficient per feature. In the combined dataset, Logistic Regression shifts toward external sources as the dominant drivers, with behavioural features providing marginal additional signal.
 
-\ProjectFigure[!htbp][width=0.62\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_3.png}{SHAP LR Detail}{Detailed SHAP importance bar plot for Logistic Regression on the traditional dataset. The dominant features align with the paired traditional-versus-combined comparison above, so the repeated beeswarm panel is omitted here for concision.}{fig:shap_lr_detailed}
+\ProjectFigure[!htbp][width=0.56\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_3.png}{SHAP LR Detail}{Detailed SHAP importance bar plot for Logistic Regression on the traditional dataset. The dominant features align with the paired traditional-versus-combined comparison above, so the repeated beeswarm panel is omitted here for concision.}{fig:shap_lr_detailed}
 
 
 \subsubsection{Random Forest}
 
-\ProjectTwoFigure[!htbp][width=0.45\textwidth][width=0.45\textwidth]{pptx/SHAP explainability - random forest - traditional.png}{pptx/SHAP explainability - random forest - combined.png}{SHAP RF: Trad vs Combined}{SHAP feature importance for Random Forest: Traditional (left) vs Combined (right). External scores dominate in both datasets, with other features contributing substantially less.}{fig:shap_rf}
+\ProjectTwoFigure[!htbp][width=0.48\textwidth][width=0.41\textwidth]{pptx/SHAP explainability - random forest - traditional.png}{pptx/SHAP explainability - random forest - combined.png}{SHAP RF: Trad vs Combined}{SHAP feature importance for Random Forest: Traditional (left) vs Combined (right). External scores dominate in both datasets, with other features contributing substantially less.}{fig:shap_rf}
 
 
 Random Forest models are primarily driven by external scores in both datasets. Age (\texttt{DAYS\_BIRTH}), education type, and financial ratios contribute, but their overall impact is much smaller relative to the \texttt{EXT\_SOURCE} variables. The Random Forest's bagging mechanism distributes importance more evenly across correlated features compared to boosting methods, resulting in a flatter importance tail.
 
-\ProjectFigure[!htbp][width=0.62\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_6.png}{SHAP RF Detail}{Detailed SHAP importance bar plot for Random Forest on the traditional dataset. EXT\_SOURCE variables remain dominant, with the importance tail flatter than the boosting models due to bagging.}{fig:shap_rf_detailed}
+\ProjectFigure[!htbp][width=0.56\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_6.png}{SHAP RF Detail}{Detailed SHAP importance bar plot for Random Forest on the traditional dataset. EXT\_SOURCE variables remain dominant, with the importance tail flatter than the boosting models due to bagging.}{fig:shap_rf_detailed}
 
 
 \subsubsection{XGBoost}
@@ -37,7 +37,7 @@ Random Forest models are primarily driven by external scores in both datasets. A
 
 The traditional XGBoost model relies heavily on external source variables and \texttt{AMT\_GOODS\_PRICE}. The combined model shows a notable shift: it incorporates a wider variety of engineered features such as \texttt{CREDIT\_ANNUITY\_PERCENT} and instalment history, spreading predictive influence across more diverse financial behaviours. This diversification is beneficial for model robustness---a model that relies less on any single feature is less vulnerable to feature drift or data quality issues.
 
-\ProjectFigure[!htbp][width=0.62\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_10.png}{SHAP XGB Detail}{Detailed SHAP importance bar plot for XGBoost on the traditional dataset. The sharper drop-off after the top-ranked features reflects the more concentrated gradient-boosting structure.}{fig:shap_xgb_detailed}
+\ProjectFigure[!htbp][width=0.56\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_10.png}{SHAP XGB Detail}{Detailed SHAP importance bar plot for XGBoost on the traditional dataset. The sharper drop-off after the top-ranked features reflects the more concentrated gradient-boosting structure.}{fig:shap_xgb_detailed}
 
 
 \subsubsection{LightGBM}
@@ -47,7 +47,7 @@ The traditional XGBoost model relies heavily on external source variables and \t
 
 LightGBM shows similar patterns to XGBoost due to their shared gradient-boosting foundations. The combined model leverages more aggregated data from previous applications and instalment payment history. LightGBM's leaf-wise growth strategy tends to create deeper, more specialised trees that can extract value from a broader set of features, resulting in the most diversified feature importance profile among all four models.
 
-\ProjectFigure[!htbp][width=0.62\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_14.png}{SHAP LGBM Detail}{Detailed SHAP importance bar plot for LightGBM on the traditional dataset. The diversified importance profile is consistent with the champion model's broader use of behavioural and contextual features.}{fig:shap_lgbm_detailed}
+\ProjectFigure[!htbp][width=0.56\textwidth]{notebook/final_traditional_shap_summary_plot_bar_shows_fe_14.png}{SHAP LGBM Detail}{Detailed SHAP importance bar plot for LightGBM on the traditional dataset. The diversified importance profile is consistent with the champion model's broader use of behavioural and contextual features.}{fig:shap_lgbm_detailed}
 
 
 \subsection{Cross-Model Feature Importance Summary}
@@ -80,13 +80,13 @@ Two primary metrics were used to quantify potential gender-based bias:
 
 \begin{itemize}
     \item \textbf{Demographic Parity (Selection Rate):} Measures whether each gender group has an equal probability of being predicted as default. The demographic parity difference is $|P(\hat{Y}=1|G=\text{male}) - P(\hat{Y}=1|G=\text{female})|$. Values closer to 0 indicate less bias.
-    \item \textbf{Equalized Odds (Recall Disparity):} Checks whether the model is equally accurate at catching actual defaults across groups~\cite{hardt2016}. The equalized odds difference is $|TPR_\text{male} - TPR_\text{female}|$. A model satisfying equalized odds makes errors at equal rates across groups.
+    \item \textbf{Equalized Odds (Recall Disparity):} Checks whether the model is equally accurate at catching actual defaults across groups~\cite{hardt2016}. The equalized odds difference is $|\acs{TPR}_\text{male} - \acs{TPR}_\text{female}|$. A model satisfying equalized odds makes errors at equal rates across groups.
 \end{itemize}
 
 \ProjectFigure[!htbp][width=0.8\textwidth]{pptx/fairness evaluation by gender.png}{Fairness by Gender}{Fairness evaluation by gender across all four model families. Demographic parity disparity varies by model, while equalized odds disparity is uniform---indicating that bias originates from the data, not the algorithm.}{fig:fairness_gender}
 
 
-\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_visualize_fairness_metrics_acr_16.png}{Traditional Fairness Metrics}{Detailed fairness metrics for the traditional dataset across all models, showing selection rates, true positive rates, and false positive rates by gender group.}{fig:fairness_traditional}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_visualize_fairness_metrics_acr_16.png}{Traditional Fairness Metrics}{Detailed fairness metrics for the traditional dataset across all models, showing selection rates, \acs{TPR}, and \acs{FPR} by gender group.}{fig:fairness_traditional}
 
 
 Key findings:
@@ -95,7 +95,7 @@ Key findings:
     \item \textbf{Random Forest shows the lowest demographic parity disparity}, making the most consistent predictions across genders. Its bagging mechanism distributes decision-making across many trees, diluting the effect of any single gender-correlated feature.
     \item \textbf{Logistic Regression has the highest disparity}, suggesting the strongest imbalance in outcomes between genders. Linear models absorb data biases directly into their coefficients, amplifying any correlation between gender-related features and the target.
     \item \textbf{All four models have uniform equalised odds}, meaning the bias is in the dataset itself, not in the algorithm of choice. The correct intervention is therefore upstream---resampling, reweighting, or collecting more representative training data.
-    \item \textbf{Disparate impact ratios remain $\geq 0.80$} across all models, meeting the four-fifths rule threshold commonly used in regulatory compliance assessments.
+    \item \textbf{\ac{DI} ratios remain $\geq 0.80$} across all models, meeting the four-fifths rule threshold commonly used in regulatory compliance assessments.
 \end{enumerate}
 
 \subsection{Gender Bias Analysis: The XNA Group}
@@ -128,6 +128,8 @@ Three complementary mitigation strategies were explored:
 \end{enumerate}
 
 The originally inserted ``before/after fairness'' graphics were in fact IV feature-selection artifacts, so they have been relocated to Chapter~\ref{sec:feature_selection}. This chapter therefore keeps the fairness discussion on genuinely fairness-specific visuals and measured disparities.
+
+\textbf{Design note on future mitigation:} the team also reviewed \ac{AIF360}'s Adversarial Debiasing workflow as a possible in-processing mitigation, especially for scenarios where fairness constraints should be learned during training rather than imposed after prediction. It was not executed in the final notebook pipeline, which relies on Fairlearn's \texttt{ThresholdOptimizer}, so it is documented here as a future-work option rather than an implemented experiment~\cite{aif360,adversarial_debiasing}.
 
 \section{Model Monitoring Framework}
 \label{sec:monitoring}
@@ -173,10 +175,10 @@ The model governance framework was designed with Home Credit's multi-country ope
 
 \begin{itemize}
     \item \textbf{Consent Framework:} Opt-in data sharing with granular permissions per feature category. Applicants can consent to sharing application data while declining behavioural data sharing, with the model gracefully degrading to the traditional-only variant.
-    \item \textbf{Anonymisation:} $k$-anonymity ($k \geq 5$) for demographic data and differential privacy ($\epsilon = 1.0$) for spending and financial data, ensuring that individual records cannot be re-identified from aggregated model outputs.
+    \item \textbf{Anonymisation:} $k$-anonymity ($k \geq 5$) for demographic data and differential privacy ($\epsilon = 1.0$) for spending data, ensuring that individual records cannot be re-identified from aggregated outputs.
     \item \textbf{Data Encryption:} AES-256 encryption at rest and TLS 1.3 in transit for all applicant data, protecting against unauthorised access and cyber attacks.
-    \item \textbf{Data Residency:} In-country data storage compliant with PDPA (Thailand), PDPA (Singapore), and DPA (Philippines), ensuring that applicant data does not cross jurisdictional boundaries without explicit consent.
-    \item \textbf{Right to Erasure:} Applicants can revoke data usage at any time. Upon erasure request, their data is removed from training sets and the model is scheduled for quarterly retraining to eliminate any residual influence.
+    \item \textbf{Data Residency:} In-country storage compliant with PDPA (Thailand), PDPA (Singapore), and DPA (Philippines), ensuring that applicant data does not cross borders without explicit consent.
+    \item \textbf{Right to Erasure:} Applicants can revoke data usage at any time. Upon request, their data is removed from training sets and the model is queued for quarterly retraining to eliminate residual influence.
 \end{itemize}
 
 \subsection{Risk Mitigation Matrix}
@@ -185,7 +187,9 @@ The model governance framework was designed with Home Credit's multi-country ope
 \centering
 \caption{Risk Mitigation Matrix for Model Deployment}
 \label{tab:risk_mitigation}
-\begin{tabular}{p{3.5cm}p{2cm}p{2cm}p{5.5cm}}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{L{3.3cm}L{1.8cm}L{1.8cm}L{7.2cm}}
 \toprule
 \textbf{Risk} & \textbf{Likelihood} & \textbf{Impact} & \textbf{Mitigation Strategy} \\
 \midrule

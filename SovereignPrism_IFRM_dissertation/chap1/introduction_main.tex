@@ -27,7 +27,7 @@ The project's business objectives are distinct from its technical objectives, re
 \begin{enumerate}
     \item \textbf{Expand credit access to thin-file borrowers:} Reliably rank 60--80\% of applicants who would otherwise go unassessed by traditional bureau-based scoring.
     \item \textbf{Maintain portfolio quality:} Achieve a 2--5\% default reduction through the A/B/C scoring framework integrated into the loan approval workflow.
-    \item \textbf{Deliver stakeholder value:} Provide banking partners with smarter investment decisions and improved LTV:CAC ratios; help credit bureau companies generate more fee-based recurring revenue through better scores; and give regulators privacy-by-default, consent-based, auditable model predictions.
+    \item \textbf{Deliver stakeholder value:} Provide banking partners with smarter investment decisions and improved \ac{LTV}:\ac{CAC} ratios; help credit bureau companies generate more fee-based recurring revenue through better scores; and give regulators privacy-by-default, consent-based, auditable model predictions.
     \item \textbf{Ensure compliance and fairness:} Maintain disparate impact ratios $\geq 0.80$ and equalised odds differences $< 0.05$ so that lending decisions remain explainable and compliant across gender and socioeconomic groups.
 \end{enumerate}
 
@@ -95,7 +95,9 @@ Model Monitoring & PSI, AUC stability, Gini drift & Monitoring dashboard metrics
 \end{tabular}
 \end{table}
 
-\ProjectFigure[!htbp][width=0.95\textwidth]{pptx/model architecture.png}{Model Architecture}{Overall model architecture showing the flow from raw data sources through feature engineering, model training, and evaluation.}{fig:model_architecture}
+\ProjectFigure*[H][width=0.95\textwidth]{pptx/model architecture.png}{Model Architecture}{Overall model architecture showing the flow from raw data sources through feature engineering, model training, and evaluation.}{fig:model_architecture}
+
+\FloatBarrier
 
 
 \subsection{Out of Scope}
@@ -113,13 +115,32 @@ Three primary stakeholder groups are identified:
     \item \textbf{Regulators \& Governments:} Concerned with risk exposure, data governance, and model fairness. The project uses a privacy-by-default architecture where all data usage is consent-based and model predictions are auditable.
 \end{enumerate}
 
-\ProjectFigure[!htbp][width=0.85\textwidth]{pptx/stakeholders-banking and financial partners.png}{Banking Stakeholders}{Banking \& Financial Partners -- key concerns include profitability, customer trust, and data privacy.}{fig:stakeholders_banking}
+\begin{center}
+\begin{minipage}[t]{0.315\textwidth}
+\centering
+\begingroup
+\setlength{\fboxsep}{\SPFigureFrameSep}%
+\setlength{\fboxrule}{2.4pt}%
+\fcolorbox{black}{white}{\adjustimage{max totalsize={0.87\linewidth}{0.162\textheight},center}{pptx/stakeholders-banking and financial partners.png}}%
+\endgroup
+\captionof{figure}[Banking Stakeholders]{Banking \& Financial Partners -- key concerns include profitability, customer trust, and data privacy.}
+\label{fig:stakeholders_banking}
+\end{minipage}\hfill%
+\begin{minipage}[t]{0.315\textwidth}
+\centering
+\adjustimage{max totalsize={0.87\linewidth}{0.162\textheight},center}{pptx/stakeholders - credit bureau companies.png}
+\captionof{figure}[Bureau Stakeholders]{Credit Bureau Companies -- key concerns include \ac{ROI}, integration complexity, and strategic fit.}
+\label{fig:stakeholders_bureau}
+\end{minipage}\hfill%
+\begin{minipage}[t]{0.315\textwidth}
+\centering
+\adjustimage{max totalsize={0.87\linewidth}{0.162\textheight},center}{pptx/stakeholders - regulators.png}
+\captionof{figure}[Regulatory Stakeholders]{Regulators \& Governments -- key concerns include risk exposure, data governance, and model fairness.}
+\label{fig:stakeholders_regulators}
+\end{minipage}
+\end{center}
 
-
-\ProjectFigure[!htbp][width=0.85\textwidth]{pptx/stakeholders - credit bureau companies.png}{Bureau Stakeholders}{Credit Bureau Companies -- key concerns include ROI, integration complexity, and strategic fit.}{fig:stakeholders_bureau}
-
-
-\ProjectFigure[!htbp][width=0.85\textwidth]{pptx/stakeholders - regulators.png}{Regulatory Stakeholders}{Regulators \& Governments -- key concerns include risk exposure, data governance, and model fairness.}{fig:stakeholders_regulators}
+\FloatBarrier
 
 
 \section{Report Organisation}
