@@ -51,11 +51,14 @@ In the context of the Home Credit dataset, alternative data manifests through se
 \centering
 \caption{Alternative Data Proxy Mapping in the Home Credit Dataset}
 \label{tab:alt_data_mapping}
-\begin{tabular}{p{3cm}p{3.5cm}p{4cm}p{3.5cm}}
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{L{2.7cm}L{3.2cm}L{4.0cm}L{5.2cm}}
 \toprule
 \textbf{Dataset Feature} & \textbf{Real-World Equivalent} & \textbf{What It Captures} & \textbf{Value for Thin-File} \\
 \midrule
-EXT\_SOURCE\_1/2/3 & External model scores (e.g., LexisNexis, telco) & Non-bureau risk signals & Risk signal even with zero bureau records \\
+\CodeCell{EXT_SOURCE_1/2/3} & External model scores (e.g., LexisNexis, telco) & Non-bureau risk signals & Risk signal even with zero bureau records \\
 Phone flags & Telco/digital footprint & Device stability, phone ownership duration & Scorable signal where bureau data is empty \\
 Social circle defaults & Social network risk scoring & Peer default patterns in 30/60 days & Behavioural proxy via social connections \\
 Document flags & KYC/identity verification & Number of identity documents submitted & Willingness to verify correlates with repayment \\

@@ -81,17 +81,19 @@ These features capture Home Credit's own prior relationship with each applicant,
 \centering
 \caption{Credit Card Balance Feature Engineering Formulas}
 \label{tab:cc_features}
-\begin{tabular}{p{3cm}p{7cm}p{4.5cm}}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{L{3.2cm}L{6.2cm}L{5.3cm}}
 \toprule
 \textbf{Feature} & \textbf{Formula} & \textbf{Meaning} \\
 \midrule
-\texttt{cc\_avg\_utilization} & $\operatorname{mean}(\texttt{AMT\_BALANCE} / \texttt{AMT\_CREDIT\_LIMIT\_ACTUAL})$ per applicant & Average credit card usage relative to the available limit \\
-\texttt{cc\_max\_utilization} & $\operatorname{max}(\texttt{AMT\_BALANCE} / \texttt{AMT\_CREDIT\_LIMIT\_ACTUAL})$ per applicant & Peak utilisation, indicating how close the customer came to maxing out the card \\
-\texttt{cc\_avg\_dpd} & $\operatorname{mean}(\texttt{SK\_DPD})$ per applicant & Chronic lateness signal measured as average days past due \\
-\texttt{cc\_max\_dpd} & $\operatorname{max}(\texttt{SK\_DPD})$ per applicant & Worst observed late-payment episode \\
-\texttt{cc\_late\_count} & $\sum (\texttt{SK\_DPD} > 0)$ per applicant & Number of months with any late payment \\
-\texttt{cc\_payment\_ratio} & $\operatorname{mean}(\texttt{AMT\_PAYMENT\_CURRENT} / \texttt{AMT\_INST\_MIN\_REGULARITY})$ per applicant & How much the customer pays relative to the minimum due \\
-\texttt{cc\_drawing\_ratio} & $\operatorname{mean}(\texttt{AMT\_DRAWINGS\_ATM\_CURRENT} / \texttt{AMT\_CREDIT\_LIMIT\_ACTUAL})$ per applicant & ATM cash withdrawal intensity relative to the card limit \\
+\CodeCell{cc_avg_utilization} & \CodeCell{mean(AMT_BALANCE / AMT_CREDIT_LIMIT_ACTUAL) per applicant} & Average credit card usage relative to the available limit \\
+\CodeCell{cc_max_utilization} & \CodeCell{max(AMT_BALANCE / AMT_CREDIT_LIMIT_ACTUAL) per applicant} & Peak utilisation, indicating how close the customer came to maxing out the card \\
+\CodeCell{cc_avg_dpd} & \CodeCell{mean(SK_DPD) per applicant} & Chronic lateness signal measured as average days past due \\
+\CodeCell{cc_max_dpd} & \CodeCell{max(SK_DPD) per applicant} & Worst observed late-payment episode \\
+\CodeCell{cc_late_count} & \CodeCell{sum(SK_DPD > 0) per applicant} & Number of months with any late payment \\
+\CodeCell{cc_payment_ratio} & \CodeCell{mean(AMT_PAYMENT_CURRENT / AMT_INST_MIN_REGULARITY) per applicant} & How much the customer pays relative to the minimum due \\
+\CodeCell{cc_drawing_ratio} & \CodeCell{mean(AMT_DRAWINGS_ATM_CURRENT / AMT_CREDIT_LIMIT_ACTUAL) per applicant} & ATM cash withdrawal intensity relative to the card limit \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -148,7 +150,24 @@ The combined pipeline starts with more features (337 versus 252) but ends with f
 
 A central analytical question of this project is whether alternative data adds meaningful predictive value beyond traditional application data. To address this, two data strategies were compared systematically.
 
-\ProjectTwoFigure[!htbp][width=0.45\textwidth][width=0.45\textwidth]{pptx/why two data startegies - traditional data.png}{pptx/why two data startegies - traditional + alternative data.png}{Traditional vs Combined Data}{Traditional Data strategy (left) versus Combined Traditional + Alternative Data strategy (right). The traditional approach captures \textit{who} the applicant is at the time of application; the combined approach additionally captures \textit{how} the applicant behaves with credit over time.}{fig:trad_vs_alt}
+\begin{table}[H]
+\centering
+\caption{Traditional versus Combined Data Strategy}
+\label{tab:trad_vs_alt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{p{3cm}p{5.3cm}p{5.3cm}}
+\toprule
+\textbf{Dimension} & \textbf{Traditional (Application-Only)} & \textbf{Combined (Traditional + Alternative)} \\
+\midrule
+Primary source & \CodeCell{application_train.csv} only & All 8 interlinked tables aggregated to applicant level \\
+Feature count & Approximately 228 engineered features before downstream filtering & Approximately 205 aggregated behavioural and bureau features before downstream filtering \\
+Signal type & Static snapshot of who the applicant is at the time of application & Dynamic view of how the applicant behaves with credit over time \\
+Strength & Strong baseline for origination decisioning and scorecard interpretability & Richer behavioural context for thin-file applicants and second-order risk patterns \\
+Limitation & No repayment history, cross-product exposure, or monthly payment-pattern signal & More complex aggregation logic and higher inter-feature correlation \\
+Business reading & Best when bureau and demographic information already exist & Best when behavioural footprints are needed to compensate for sparse bureau history \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
 \begin{itemize}
@@ -160,14 +179,14 @@ A central analytical question of this project is whether alternative data adds m
 \centering
 \caption{Alternative Data Proxy Mapping: How Dataset Features Map to Real-World Alternative Data Sources}
 \label{tab:alt_data_proxies}
-\begin{tabular}{p{2.5cm}p{3cm}p{3.5cm}p{4cm}}
+\begin{tabular}{p{2.7cm}p{2.9cm}p{3.4cm}p{3.9cm}}
 \toprule
 \textbf{Alt-Data Proxy} & \textbf{Real-World Equivalent} & \textbf{What It Captures} & \textbf{How It Helps Thin-File Applicants} \\
 \midrule
-EXT\_SOURCE\_1/2/3 & External model scores & Non-bureau risk signals & Risk signal even with zero bureau records \\
+\CodeCell{EXT_SOURCE_1/2/3} & External model scores & Non-bureau risk signals & Risk signal even with zero bureau records \\
 Phone flags & Telco/digital footprint & Device stability & Scorable signal where bureau data is empty \\
 Social circle & Social network risk & Peer default patterns & ``Birds of a feather'' behavioural proxy \\
-Document flags & KYC/identity depth & Identity verification willingness & Correlates with repayment intent \\
+Document flags & \ac{KYC}/identity depth & Identity verification willingness & Correlates with repayment intent \\
 Housing/property & Property records, utility data & Asset proxies & Stable housing = lower risk \\
 Regional risk & Area-level socioeconomic & Geographic risk concentration & Context for low-risk region applicants \\
 Credit card behaviour & Open banking data & Utilisation and payment patterns & Complements bureau DPD scores \\
@@ -176,6 +195,10 @@ Credit card behaviour & Open banking data & Utilisation and payment patterns & C
 \end{table}
 
 The key insight is that traditional features only work reliably when the applicant already has established bureau records. For the approximately 1,700 credit-invisible applicants (no external scores at all) and the approximately 50,000 thin-file applicants (\texttt{EXT\_SOURCE\_1} missing) in the dataset, alternative behavioural data provides independent risk signals that do not require prior formal credit history. This directly addresses the business objective of expanding credit access to underserved populations (Section~\ref{sec:business_objectives}).
+
+\textbf{The design rationale also aligns with DBS's public framing that credit scores depend materially on financial behaviour history, especially payment behaviour and credit utilisation patterns.}~\cite{dbs_credit_score} That external industry framing maps closely onto this project's decision to aggregate instalment timing, \ac{DPD}, balance utilisation, and previous-application histories instead of treating the application form as a sufficient representation of borrower risk.
+
+\FloatBarrier
 
 \section{Feature Selection}
 \label{sec:feature_selection}
@@ -186,29 +209,9 @@ Feature selection serves three purposes in credit scoring: reducing overfitting 
 
 Weight of Evidence (WoE) and Information Value (IV) were applied to quantify the predictive strength of each variable~\cite{siddiqi2012}. WoE transforms categorical or binned variables into a continuous scale that reflects the log-odds difference between good and bad borrowers in each bin, while IV aggregates this information into a single measure of overall predictive power.
 
-\ProjectFigure[!htbp][width=0.9\textwidth]{pptx/woe iv feature selection - combined pipeline.png}{Combined WoE and IV}{WoE/IV feature-selection results for the combined pipeline. The overall IV distribution shows that while most features are individually weak, approximately 70 features exceed the usability threshold.}{fig:woe_iv}
+\ProjectFigure*[!htbp][width=0.9\textwidth]{pptx/woe iv feature selection - combined pipeline.png}{Combined WoE and IV}{WoE/IV feature-selection results for the combined pipeline. The overall IV distribution shows that while most features are individually weak, approximately 70 features exceed the usability threshold.}{fig:woe_iv}
 
-\ProjectFigure[!htbp][width=0.85\textwidth]{venky/fairness_metric_demographic_parity.png}{Top IV Features}{Top 30 features by information value for the traditional scorecard feature-selection workflow. The ranking reinforces the dominance of the \texttt{EXT\_SOURCE} variables, followed by bureau exposure, employment duration, and instalment repayment features.}{fig:iv_top_features}
-
-The IV distribution indicated that most features were weak individually, consistent with the correlation analysis findings in Section~\ref{subsec:correlation_eda}:
-
-\begin{table}[H]
-\centering
-\caption{Information Value Distribution Across All Candidate Features}
-\label{tab:iv_distribution}
-\begin{tabular}{llr}
-\toprule
-\textbf{IV Range} & \textbf{Predictive Power} & \textbf{Count} \\
-\midrule
-$< 0.02$ & Useless & 93 \\
-$0.02$ to $0.1$ & Weak & 65 \\
-$0.1$ to $0.3$ & Medium & 3 \\
-$0.3$ to $0.5$ & Strong & 2 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Approximately 70 features exceeded the IV $> 0.02$ threshold and were retained. The two ``strong'' features (IV $> 0.3$) are \texttt{EXT\_SOURCE\_2} and \texttt{EXT\_SOURCE\_3}, consistent with their dominance in the correlation and SHAP analyses. The three ``medium'' features include \texttt{EXT\_SOURCE\_1} and key financial ratios. Even though only a small number of features are individually strong, the combination of many moderately informative variables produces a robust ensemble signal---this is the fundamental justification for multivariate modelling over simple rule-based scoring.
+The IV distribution indicated that most features were weak individually, consistent with the correlation analysis findings in Section~\ref{subsec:correlation_eda}. Approximately 70 features exceeded the IV $> 0.02$ threshold and were retained. The two ``strong'' features (IV $> 0.3$) are \texttt{EXT\_SOURCE\_2} and \texttt{EXT\_SOURCE\_3}, consistent with their dominance in the correlation and SHAP analyses. The three ``medium'' features include \texttt{EXT\_SOURCE\_1} and key financial ratios. Even though only a small number of features are individually strong, the combination of many moderately informative variables produces a robust ensemble signal---this is the fundamental justification for multivariate modelling over simple rule-based scoring.
 
 \begin{table}[H]
 \centering
@@ -229,12 +232,13 @@ $0.30$ to $0.50$ & Strong & 2 \\
 \subsection{Variance-Based Filtering}
 
 Near-zero-variance numeric columns (threshold $< 0.01$) were identified on the training split and removed across all splits. This step eliminates features that are effectively constant and provide no discriminatory information. The variance threshold is applied on the training set only to prevent leakage.
+\ProjectFigure[!htbp][width=0.85\textwidth]{venky/fairness_metric_demographic_parity.png}{Top IV Features}{Top 30 features by information value for the traditional scorecard feature-selection workflow. The ranking reinforces the dominance of the \texttt{EXT\_SOURCE} variables, followed by bureau exposure, employment duration, and instalment repayment features.}{fig:iv_top_features}
 
 \subsection{Correlation-Based Removal}
 
 Highly correlated feature pairs ($|r| > 0.8$) were identified, and one feature from each pair was dropped to reduce multicollinearity. This step is particularly important for logistic regression, where multicollinearity inflates coefficient variance and makes WoE-based scorecards unreliable. For tree-based models, multicollinearity is less harmful but still wastes model capacity on redundant features. The feature retained from each pair was selected based on higher individual IV score.
 
-\ProjectFigure[!htbp][width=0.85\textwidth]{pptx/correlation matrix.png}{Feature Correlation Matrix}{Correlation matrix of key features showing multicollinearity patterns. Notable pairs include AMT\_CREDIT/AMT\_GOODS\_PRICE ($r = 0.987$) and AMT\_CREDIT/AMT\_ANNUITY ($r = 0.770$).}{fig:correlation_matrix}
+\ProjectFigure[!htbp][width=0.85\textwidth]{discussion/Credit_Card_Balance_correlation_matrix_key.png}{Feature Correlation Matrix}{Correlation matrix of key features showing multicollinearity patterns. Notable pairs include AMT\_CREDIT/AMT\_GOODS\_PRICE ($r = 0.987$) and AMT\_CREDIT/AMT\_ANNUITY ($r = 0.770$).}{fig:correlation_matrix}
 
 
 \section{Dimensionality Reduction: PCA Analysis}
@@ -242,11 +246,9 @@ Highly correlated feature pairs ($|r| > 0.8$) were identified, and one feature f
 
 Principal Component Analysis was applied both as a dimensionality reduction technique for the PCA dataset variants and as an interpretability exercise to understand the latent structure of the feature space~\cite{jolliffe2002}.
 
-\ProjectFigure*[!htbp][width=0.85\textwidth]{notebook/final_traditional_pca_scree_plot_explained_variance_1.png}{PCA Scree Plot}{Detailed scree plot from the traditional PCA pipeline showing individual and cumulative variance explained by each principal component.}{fig:pca_scree_detailed}
+\ProjectFigure[!htbp][width=0.85\textwidth]{notebook/final_traditional_pca_scree_plot_explained_variance_1.png}{PCA Scree Plot}{Detailed scree plot from the traditional PCA pipeline showing individual and cumulative variance explained by each principal component.}{fig:pca_scree_detailed}
 
-The scree plot reveals that PC1 alone covers approximately 17.5\% of variance, but 51 components are required to reach 90\% cumulative coverage. This indicates \textit{no strong latent structure}---there is one dominant signal (likely driven by the EXT\_SOURCE variables) but the remaining information is spread diffusely across many feature clusters.
-
-\ProjectFigure[!htbp][width=0.85\textwidth]{venky/pca_component_variance_ratio.png}{PCA Variance Ratios}{PCA component variance ratios showing the rapid decay in explained variance after the first few components. The long tail of components each explaining $<2\%$ of variance reflects the high-dimensional nature of credit risk data.}{fig:pca_variance_ratio}
+The scree plot reveals that PC1 alone covers approximately 17.5\% of variance, but 51 components are required to reach 90\% cumulative coverage. This indicates \textit{no strong latent structure}---there is one dominant signal (likely driven by the EXT\_SOURCE variables) but the remaining information is spread diffusely across many feature clusters. The earlier slide artifact previously placed here was in fact a bureau-credit exposure histogram, so it has been relocated to the bureau EDA section (Chapter~\ref{subsec:bureau_eda}) where it belongs.
 
 \subsection{PCA Impact on Model Performance}
 
